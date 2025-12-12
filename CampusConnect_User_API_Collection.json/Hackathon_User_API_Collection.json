@@ -1,0 +1,61 @@
+{
+  "info": {
+    "name": "Hackathon User Routes",
+    "description": "User routes for viewing and registering in hackathons.",
+    "_postman_id": "hackathon-user-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Hackathons",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/hackathons"
+      }
+    },
+    {
+      "name": "Filter Hackathons",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/hackathons/filter?technology=AI&organization=CampusConnect&startDate=2025-12-01"
+      }
+    },
+    {
+      "name": "Get Hackathon by ID",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/hackathons/1"
+      }
+    },
+    {
+      "name": "Register for Hackathon",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/hackathons/1/register/5",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"teamName\": \"Tech Titans\",\n  \"projectIdea\": \"AI-powered student management system\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get My Registered Hackathons",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/hackathons/registrations/5"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ]
+}
