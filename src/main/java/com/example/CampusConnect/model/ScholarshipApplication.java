@@ -1,7 +1,9 @@
 package com.example.CampusConnect.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,18 +13,30 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ScholarshipApplication {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "scholarship_id")
+    @JoinColumn(name = "scholarship_id", nullable = false)
+    @NotNull(message = "Scholarship is required")
     private Scholarship scholarship;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private com.example.CampusConnect.model.User user;
+    @JoinColumn(name = "user_id", nullable = false)
+    @NotNull(message = "User is required")
+    private User user;
 
+    @Column(nullable = false)
     private LocalDateTime appliedAt;
-    private String status; // OR enum if you have RegistrationStatus
+
+    @Column(length = 500, nullable = false)
+    @NotBlank(message = "Statement of purpose is required")
+    @Size(min = 20, max = 500)
+    private String sop;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ApplicationStatus status;
 }
