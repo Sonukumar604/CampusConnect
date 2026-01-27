@@ -3,6 +3,7 @@ package com.example.CampusConnect.advices;
 import com.example.CampusConnect.exceptions.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -82,4 +83,11 @@ public class GlobalExceptionHandler {
                         "error", "Internal Server Error: " + ex.getMessage()
                 ));
     }
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<?> handleOptimisticLock() {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body("This record was modified by another user. Please retry.");
+    }
+
 }

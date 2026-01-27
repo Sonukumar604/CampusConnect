@@ -3,37 +3,31 @@ package com.example.CampusConnect.repository;
 import com.example.CampusConnect.model.Hackathon;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Optional;
 
-@Repository
 public interface HackathonRepository extends JpaRepository<Hackathon, Long> {
 
-    // For filtering hackathons dynamically
+    // 🔒 PESSIMISTIC LOCK (registration safety)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select h from Hackathon h where h.id = :id")
+    Optional<Hackathon> findByIdForUpdate(@Param("id") Long id);
+
+    // 🔍 FILTER SUPPORT (used by HackathonUserServiceImpl)
     @Query("""
-       SELECT h FROM Hackathon h
-       WHERE (:technology IS NULL OR h.technology LIKE %:technology%)
-         AND (:organization IS NULL OR h.organization LIKE %:organization%)
-         AND (:startDate IS NULL OR h.startDate = :startDate)
-       """)
+        select h from Hackathon h
+        where (:technology is null or h.technology = :technology)
+          and (:organization is null or h.organization = :organization)
+          and (:startDate is null or h.startDate >= :startDate)
+    """)
     Page<Hackathon> filterHackathons(
             @Param("technology") String technology,
             @Param("organization") String organization,
             @Param("startDate") LocalDate startDate,
             Pageable pageable
     );
-
-
-    // Check if hackathon is active
-    List<Hackathon> findByActiveTrue();
-
-    // For user side sorted results
-    Page<Hackathon> findByActiveTrue(Pageable pageable);
 }
-

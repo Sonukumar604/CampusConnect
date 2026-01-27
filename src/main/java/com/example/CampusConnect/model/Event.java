@@ -18,6 +18,9 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version // 🔒 Optimistic Locking
+    private Long version;
+
     @Column(nullable = false)
     private String title;
 
@@ -30,16 +33,14 @@ public class Event {
     @Enumerated(EnumType.STRING)
     private EventMode mode;
 
-    private String location; // nullable for online
+    private String location;
 
     private String speakerName;
-
     private String hostOrganization;
 
     private Integer registrationLimit;
 
     private LocalDateTime startDateTime;
-
     private LocalDateTime endDateTime;
 
     @Enumerated(EnumType.STRING)
@@ -47,7 +48,7 @@ public class Event {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
-    private com.example.CampusConnect.model.User createdBy;
+    private User createdBy;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventRegistration> registrations = new ArrayList<>();

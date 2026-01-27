@@ -8,6 +8,7 @@ import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.HackathonRepository;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.HackathonAdminService;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,20 +19,18 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class HackathonAdminServiceImpl implements HackathonAdminService {
 
-    @Autowired
-    private HackathonRepository hackathonRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ModelMapper mapper;
+    private final HackathonRepository hackathonRepository;
+    private final UserRepository userRepository;
+    private final ModelMapper mapper;
 
     @Override
+    @Transactional  // ✅ REQUIRED for optimistic locking
     public HackathonDTO createHackathon(CreateHackathonDTO dto, Long adminId) {
 
         User admin = userRepository.findById(adminId)
@@ -48,12 +47,13 @@ public class HackathonAdminServiceImpl implements HackathonAdminService {
     }
 
     @Override
+    @Transactional  // ✅ REQUIRED
     public HackathonDTO updateHackathon(Long hackathonId, CreateHackathonDTO dto) {
 
         Hackathon existing = hackathonRepository.findById(hackathonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hackathon not found"));
 
-        mapper.map(dto, existing); // update fields
+        mapper.map(dto, existing); // updates fields safely
 
         Hackathon updated = hackathonRepository.save(existing);
         return mapper.map(updated, HackathonDTO.class);

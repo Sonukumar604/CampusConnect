@@ -1,16 +1,12 @@
 package com.example.CampusConnect.model;
 
-import com.example.CampusConnect.model.HackathonStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
+import java.time.LocalDate;
+import java.util.*;
 @Entity
 @Table(name = "hackathons")
 @Data
@@ -23,38 +19,42 @@ public class Hackathon {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank private String title;
+    @Version // 🔒 Optimistic Locking
+    private Long version;
 
-    @NotBlank private String technology;
+    @NotBlank
+    private String title;
 
-    @NotBlank private String organization;
+    @NotBlank
+    private String technology;
+
+    @NotBlank
+    private String organization;
 
     private String location;
-
     private String description;
 
-    @Column(name = "start_date")
     private LocalDate startDate;
-
-    @Column(name = "end_date")
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
     private HackathonStatus status;
 
     @Min(0)
-    private Integer participantLimit; // null or 0 = unlimited
+    private Integer participantLimit;
 
-    private boolean registrationOpen;
+    /* ✅ KEEP ONLY THIS FIELD */
+    private boolean registrationsOpen = true;
+
+    private boolean active = true;
+
+    private int registeredParticipantsCount = 0;
+
+    /* ================= RELATIONSHIPS ================= */
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
-
-    public void assignCreator(User user) {
-        this.createdBy = user;
-        user.getHackathonsCreated().add(this);
-    }
 
     @OneToMany(mappedBy = "hackathon", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HackathonRegistration> registrations = new ArrayList<>();
@@ -67,10 +67,11 @@ public class Hackathon {
     )
     private Set<User> judges = new HashSet<>();
 
+    /* ================= HELPERS ================= */
 
-    private boolean active = true;
-
-    private boolean registrationsOpen = true;
-
-    private int registeredParticipantsCount = 0;
+    public void assignCreator(User user) {
+        this.createdBy = user;
+        user.getHackathonsCreated().add(this);
+    }
 }
+

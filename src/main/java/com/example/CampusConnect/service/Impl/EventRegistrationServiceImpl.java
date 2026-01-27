@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,17 +27,21 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
     private final ModelMapper mapper;
 
     @Override
+    @Transactional // 🔒 Atomic operation
     public EventRegistrationDTO register(Long userId, Long eventId, EventRegistrationRequest request) {
 
         if (registrationRepository.existsByUserIdAndEventId(userId, eventId)) {
             throw new IllegalArgumentException("Already registered for this event");
         }
 
-        var user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        var event = eventRepository.findById(eventId).orElseThrow(() -> new ResourceNotFoundException("Event not found"));
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Check capacity
-        if (event.getRegistrationLimit() != null && event.getRegistrations().size() >= event.getRegistrationLimit()) {
+        var event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
+
+        if (event.getRegistrationLimit() != null &&
+                event.getRegistrations().size() >= event.getRegistrationLimit()) {
             throw new IllegalStateException("Registration limit reached");
         }
 
@@ -46,8 +51,7 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
                 .notes(request != null ? request.getNotes() : null)
                 .build();
 
-        var saved = registrationRepository.save(reg);
-        return mapper.map(saved, EventRegistrationDTO.class);
+        return mapper.map(registrationRepository.save(reg), EventRegistrationDTO.class);
     }
 
     @Override

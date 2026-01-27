@@ -12,16 +12,16 @@ import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.HackathonRegistrationService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Primary
-public class HackathonRegistrationServiceImpl implements HackathonRegistrationService {
+public class HackathonRegistrationServiceImpl
+        implements HackathonRegistrationService {
 
     @Autowired
     private HackathonRegistrationRepository registrationRepository;
@@ -36,23 +36,27 @@ public class HackathonRegistrationServiceImpl implements HackathonRegistrationSe
     private ModelMapper mapper;
 
     @Override
-    public HackathonRegistrationDTO registerUser(Long userId, Long hackathonId, RegistrationHackathonRequest request) {
+    @Transactional
+    public HackathonRegistrationDTO registerUser(
+            Long userId,
+            Long hackathonId,
+            RegistrationHackathonRequest request) {
 
-        if (registrationRepository.existsByUserId_IdAndHackathonId_Id(userId, hackathonId)) {
+        if (registrationRepository.existsByUser_IdAndHackathon_Id(userId, hackathonId)) {
             throw new IllegalArgumentException("Already registered");
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Hackathon hackathon = hackathonRepository.findById(hackathonId)
+        Hackathon hackathon = hackathonRepository.findByIdForUpdate(hackathonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hackathon not found"));
 
         if (!hackathon.isRegistrationsOpen()) {
             throw new IllegalStateException("Registrations closed");
         }
 
-        HackathonRegistration reg = HackathonRegistration.builder()
+        HackathonRegistration registration = HackathonRegistration.builder()
                 .user(user)
                 .hackathon(hackathon)
                 .teamName(request.getTeamName())
@@ -62,17 +66,15 @@ public class HackathonRegistrationServiceImpl implements HackathonRegistrationSe
                 .registrationDate(LocalDateTime.now())
                 .build();
 
-        HackathonRegistration saved = registrationRepository.save(reg);
-
+        HackathonRegistration saved = registrationRepository.save(registration);
         return mapper.map(saved, HackathonRegistrationDTO.class);
     }
 
     @Override
     public List<HackathonRegistrationDTO> getRegistrationsByUser(Long userId) {
-        return registrationRepository.findByUserId_Id(userId)
+        return registrationRepository.findByUser_Id(userId)
                 .stream()
                 .map(r -> mapper.map(r, HackathonRegistrationDTO.class))
                 .collect(Collectors.toList());
     }
 }
-
