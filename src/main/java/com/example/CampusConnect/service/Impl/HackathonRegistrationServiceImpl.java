@@ -10,6 +10,7 @@ import com.example.CampusConnect.repository.HackathonRegistrationRepository;
 import com.example.CampusConnect.repository.HackathonRepository;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.HackathonRegistrationService;
+import com.example.CampusConnect.util.retry.OptimisticRetry; // ✅ NEW
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class HackathonRegistrationServiceImpl
 
     @Override
     @Transactional
+    @OptimisticRetry // ✅ NEW (automatic retry on version conflict)
     public HackathonRegistrationDTO registerUser(
             Long userId,
             Long hackathonId,
