@@ -79,8 +79,8 @@ public class ScholarshipUserServiceImpl implements ScholarshipUserService {
 
     private ScholarshipDTO toDto(Scholarship e) {
         ScholarshipDTO dto = mapper.map(e, ScholarshipDTO.class);
-        dto.setCreatedById(e.getCreatedBy() != null ? e.getCreatedBy().getId() : null);
-        dto.setCreatedByName(e.getCreatedBy() != null ? e.getCreatedBy().getName() : null);
+        dto.setCreatedById(e.getCreatedBy() != null ? e.getCreatedByUser().getId() : null);
+        dto.setCreatedByName(e.getCreatedBy() != null ? e.getCreatedByUser().getName() : null);
         dto.setApplicationCount(e.getApplications() != null ? e.getApplications().size() : 0);
         dto.setCategory(e.getCategory() != null ? e.getCategory().name() : null);
         dto.setPublishStatus(e.getPublishStatus() != null ? e.getPublishStatus().name() : null);

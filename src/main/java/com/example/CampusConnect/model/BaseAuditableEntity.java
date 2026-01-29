@@ -14,11 +14,10 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-
-@Getter
-@Setter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter
 public abstract class BaseAuditableEntity {
 
     @CreatedDate
@@ -29,6 +28,7 @@ public abstract class BaseAuditableEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // ✅ KEEP AS STRING (IMPORTANT)
     @CreatedBy
     @Column(name = "created_by", nullable = false, updatable = false)
     private String createdBy;

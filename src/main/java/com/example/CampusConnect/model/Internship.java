@@ -2,21 +2,30 @@ package com.example.CampusConnect.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
+@Table(name = "internships")
+@Audited // ✅ Enable Hibernate Envers
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "internships")
-public class Internship {
+public class Internship extends BaseAuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version // 🔒 Optimistic Locking
+    private Long version;
 
     @Column(nullable = false, length = 100)
     private String companyName;
@@ -29,7 +38,7 @@ public class Internship {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private InternshipType type;  // REMOTE / HYBRID / ONSITE
+    private InternshipType type; // REMOTE / HYBRID / ONSITE
 
     @Column(nullable = false)
     private String stipend;
@@ -54,6 +63,6 @@ public class Internship {
     private User postedBy;
 
     @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = false)
+    @NotAudited // ❌ Avoid auditing transactional data
     private List<InternshipApplication> applications = new ArrayList<>();
-
 }

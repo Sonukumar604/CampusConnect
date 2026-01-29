@@ -2,17 +2,23 @@ package com.example.CampusConnect.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "events")
-@Data
+@Audited // ✅ Enable Hibernate Envers for Event
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Event {
+public class Event extends BaseAuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,9 +53,11 @@ public class Event {
     private PublishStatus publishStatus = PublishStatus.DRAFT;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by")
-    private User createdBy;
+    @JoinColumn(name = "created_by_user_id", nullable = false)
+    private User createdByUser;
+
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @NotAudited // ❌ Avoid auditing high-volume transactional data
     private List<EventRegistration> registrations = new ArrayList<>();
 }

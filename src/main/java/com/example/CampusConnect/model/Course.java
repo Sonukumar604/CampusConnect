@@ -4,25 +4,30 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "courses")
-@Data
+@Audited // 🔥 Enable Hibernate Envers for this entity
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Course {
+public class Course extends BaseAuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    private Long version;
 
     @NotBlank(message = "Course title is required")
     private String title;
@@ -55,16 +60,16 @@ public class Course {
     @Column(length = 1000)
     private String description;
 
-    // ✅ Enum Field for course type
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CourseType courseType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
-    private User createdBy;
+    @JoinColumn(name = "created_by_user_id", nullable = false)
+    private User createdByUser;
+
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = false)
+    @NotAudited // ❌ Do NOT audit collections
     private List<CourseEnrollment> enrollments = new ArrayList<>();
-
 }

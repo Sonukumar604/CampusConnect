@@ -30,7 +30,7 @@ public class EventAdminServiceImpl implements EventAdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
 
         Event event = mapper.map(dto, Event.class);
-        event.setCreatedBy(admin);
+        event.setCreatedByUser(admin);
         Event saved = eventRepository.save(event);
         return toDto(saved);
     }

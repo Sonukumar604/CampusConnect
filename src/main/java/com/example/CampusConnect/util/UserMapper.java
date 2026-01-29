@@ -15,8 +15,8 @@ public class UserMapper {
             m.map(src -> src.getPublishStatus().name(), ScholarshipDTO::setPublishStatus);
 
             // Created By
-            m.map(src -> src.getCreatedBy().getId(), ScholarshipDTO::setCreatedById);
-            m.map(src -> src.getCreatedBy().getName(), ScholarshipDTO::setCreatedByName);
+            m.map(src -> src.getCreatedByUser().getId(), ScholarshipDTO::setCreatedById);
+            m.map(src -> src.getCreatedByUser().getName(), ScholarshipDTO::setCreatedByName);
 
             // Application count
             m.map(src -> src.getApplications().size(), ScholarshipDTO::setApplicationCount);

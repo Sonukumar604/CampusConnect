@@ -2,21 +2,30 @@ package com.example.CampusConnect.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "scholarships")
-@Data
+@Audited // ✅ Enable Hibernate Envers
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Scholarship {
+public class Scholarship extends BaseAuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version // 🔒 Optimistic Locking
+    private Long version;
 
     @Column(nullable = false)
     private String title;
@@ -40,9 +49,10 @@ public class Scholarship {
     private PublishStatus publishStatus = PublishStatus.DRAFT;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by")
-    private com.example.CampusConnect.model.User createdBy;
+    @JoinColumn(name = "created_by_user_id", nullable = false)
+    private User createdByUser;
 
     @OneToMany(mappedBy = "scholarship", cascade = CascadeType.ALL, orphanRemoval = true)
+    @NotAudited // ❌ Avoid auditing transactional data
     private List<ScholarshipApplication> applications = new ArrayList<>();
 }
