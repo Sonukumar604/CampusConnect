@@ -6,11 +6,16 @@ import com.example.CampusConnect.service.InternshipUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/internships")
 @RequiredArgsConstructor
 public class InternshipUserController {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(InternshipUserController.class);
 
     private final InternshipUserService internshipUserService;
 
@@ -21,6 +26,9 @@ public class InternshipUserController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "postedOn") String sortBy
     ) {
+        log.info("User request: fetch internships paged");
+        log.debug("page={}, size={}, sortBy={}", page, size, sortBy);
+
         return internshipUserService.getAllInternships(page, size, sortBy);
     }
 
@@ -31,6 +39,9 @@ public class InternshipUserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
+        log.info("User request: filter internships by location");
+        log.debug("location={}, page={}, size={}", location, page, size);
+
         return internshipUserService.filterByLocation(location, page, size);
     }
 
@@ -41,6 +52,9 @@ public class InternshipUserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
+        log.info("User request: filter internships by type");
+        log.debug("type={}, page={}, size={}", type, page, size);
+
         return internshipUserService.filterByType(type, page, size);
     }
 
@@ -51,6 +65,9 @@ public class InternshipUserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
+        log.info("User request: search internships");
+        log.debug("keyword={}, page={}, size={}", keyword, page, size);
+
         return internshipUserService.search(keyword, page, size);
     }
 }

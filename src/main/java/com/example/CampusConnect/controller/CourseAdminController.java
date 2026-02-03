@@ -11,10 +11,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin/courses")
 public class CourseAdminController {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(CourseAdminController.class);
 
     @Autowired
     private CourseAdminService adminService;
@@ -22,52 +27,69 @@ public class CourseAdminController {
     @Autowired
     private ModelMapper modelMapper;
 
-    // Create course (admin)
     @PostMapping
     public ResponseEntity<CourseResponseDTO> addCourse(@Valid @RequestBody CourseRequestDTO requestDTO) {
+        log.info("Admin request: create course");
+
         Course course = modelMapper.map(requestDTO, Course.class);
         Course saved = adminService.addCourse(course);
-        CourseResponseDTO response = modelMapper.map(saved, CourseResponseDTO.class);
-        return ResponseEntity.ok(response);
+
+        log.info("Course created successfully with id {}", saved.getId());
+        return ResponseEntity.ok(modelMapper.map(saved, CourseResponseDTO.class));
     }
 
-    // Update course (admin)
     @PutMapping("/{id}")
     public ResponseEntity<CourseResponseDTO> updateCourse(
             @PathVariable Long id,
             @Valid @RequestBody CourseRequestDTO requestDTO) {
 
+        log.info("Admin request: update course {}", id);
+
         Course course = modelMapper.map(requestDTO, Course.class);
         Course updated = adminService.updateCourse(id, course);
-        if (updated == null) return ResponseEntity.notFound().build();
+
+        if (updated == null) {
+            log.warn("Course not found for update, id={}", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        log.info("Course updated successfully, id={}", id);
         return ResponseEntity.ok(modelMapper.map(updated, CourseResponseDTO.class));
     }
 
-    // Delete course (admin)
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteCourse(@PathVariable Long id) {
-        String msg = adminService.deleteCourse(id);
-        return ResponseEntity.ok(msg);
+        log.warn("Admin request: delete course {}", id);
+        return ResponseEntity.ok(adminService.deleteCourse(id));
     }
 
-    // Admin paged view (with sorting)
     @GetMapping
     public ResponseEntity<Page<CourseResponseDTO>> getPagedCourses(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size,
             @RequestParam(defaultValue = "title") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir
-    ) {
-        Page<Course> coursePage = adminService.getAllCoursesPaged(page, size, sortBy, sortDir);
-        Page<CourseResponseDTO> dtoPage = coursePage.map(c -> modelMapper.map(c, CourseResponseDTO.class));
-        return ResponseEntity.ok(dtoPage);
+            @RequestParam(defaultValue = "asc") String sortDir) {
+
+        log.info("Admin request: get paged courses");
+        log.debug("page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+
+        Page<Course> coursePage =
+                adminService.getAllCoursesPaged(page, size, sortBy, sortDir);
+
+        return ResponseEntity.ok(coursePage.map(c ->
+                modelMapper.map(c, CourseResponseDTO.class)));
     }
 
-    // Get single course by id (admin)
     @GetMapping("/{id}")
     public ResponseEntity<CourseResponseDTO> getCourseById(@PathVariable Long id) {
+        log.info("Admin request: get course {}", id);
+
         Course course = adminService.getCourseById(id);
-        if (course == null) return ResponseEntity.notFound().build();
+        if (course == null) {
+            log.warn("Course not found, id={}", id);
+            return ResponseEntity.notFound().build();
+        }
+
         return ResponseEntity.ok(modelMapper.map(course, CourseResponseDTO.class));
     }
 }

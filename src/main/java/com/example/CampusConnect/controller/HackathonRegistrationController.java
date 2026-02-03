@@ -34,4 +34,3 @@ public class HackathonRegistrationController {
         return ResponseEntity.ok(registrationService.getRegistrationsByUser(userId));
     }
 }
-

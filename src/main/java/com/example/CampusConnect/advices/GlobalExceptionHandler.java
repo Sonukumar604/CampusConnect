@@ -1,6 +1,8 @@
 package com.example.CampusConnect.advices;
 
 import com.example.CampusConnect.exceptions.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -14,9 +16,15 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     // ✅ Duplicate resource (e.g., internship or user already exists)
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<Map<String, Object>> handleDuplicate(DuplicateResourceException ex) {
+
+        log.warn("Duplicate resource detected: {}", ex.getMessage());
+
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of(
                         "timestamp", Instant.now(),
@@ -28,6 +36,9 @@ public class GlobalExceptionHandler {
     // ✅ Resource not found (User, Hackathon, Internship, etc.)
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
+
+        log.warn("Resource not found: {}", ex.getMessage());
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of(
                         "timestamp", Instant.now(),
@@ -39,6 +50,9 @@ public class GlobalExceptionHandler {
     // ✅ Authentication / Authorization failure
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Map<String, Object>> handleAuth(AuthenticationException ex) {
+
+        log.warn("Authentication failure: {}", ex.getMessage());
+
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of(
                         "timestamp", Instant.now(),
@@ -50,6 +64,9 @@ public class GlobalExceptionHandler {
     // ✅ Validation errors (@Valid DTO fields)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
+
+        log.warn("Validation failed: {}", ex.getMessage());
+
         Map<String, String> fieldErrors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error ->
                 fieldErrors.put(error.getField(), error.getDefaultMessage())
@@ -66,6 +83,9 @@ public class GlobalExceptionHandler {
     // ✅ Database constraint / Data integrity
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
+
+        log.error("Database constraint violation", ex);
+
         return ResponseEntity.badRequest().body(Map.of(
                 "timestamp", Instant.now(),
                 "status", 400,
@@ -73,9 +93,23 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    // ✅ Optimistic locking failure
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<?> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+
+        log.warn("Optimistic locking conflict detected", ex);
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body("This record was modified by another user. Please retry.");
+    }
+
     // ✅ Catch-all fallback for all modules (Internship, Hackathon, User)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+
+        log.error("Unhandled exception occurred", ex);
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
                         "timestamp", Instant.now(),
@@ -83,11 +117,4 @@ public class GlobalExceptionHandler {
                         "error", "Internal Server Error: " + ex.getMessage()
                 ));
     }
-    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<?> handleOptimisticLock() {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body("This record was modified by another user. Please retry.");
-    }
-
 }
