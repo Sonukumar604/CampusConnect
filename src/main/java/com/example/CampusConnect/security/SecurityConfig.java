@@ -17,28 +17,28 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // Disable CSRF (because we are building REST APIs)
                 .csrf(csrf -> csrf.disable())
-
-                // Disable session (JWT will be stateless)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public APIs
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/public/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        ).permitAll()
 
-                        // Everything else requires authentication
+                        // Public APIs
+                        .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
+
+                        // Admin-only APIs
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // User + Organizer APIs
+                        .requestMatchers("/api/user/**").hasAnyRole("STUDENT", "ORGANIZER")
+
+                        // Any other request
                         .anyRequest().authenticated()
-                );
+                )
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 }
