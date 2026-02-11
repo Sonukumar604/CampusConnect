@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
     private static final Logger log =
             LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // ✅ Duplicate resource (e.g., internship or user already exists)
+    // Duplicate resource (e.g., internship or user already exists)
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<Map<String, Object>> handleDuplicate(DuplicateResourceException ex) {
 
@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    // ✅ Resource not found (User, Hackathon, Internship, etc.)
+    // Resource not found (User, Hackathon, Internship, etc.)
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
 
@@ -93,7 +93,7 @@ public class GlobalExceptionHandler {
         ));
     }
 
-    // ✅ Optimistic locking failure
+    // Optimistic locking failure
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<?> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
 
@@ -104,7 +104,7 @@ public class GlobalExceptionHandler {
                 .body("This record was modified by another user. Please retry.");
     }
 
-    // ✅ Catch-all fallback for all modules (Internship, Hackathon, User)
+    // Catch-all fallback for all modules (Internship, Hackathon, User)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
 

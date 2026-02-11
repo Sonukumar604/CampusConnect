@@ -1,15 +1,12 @@
 package com.example.CampusConnect.security;
 
 import com.example.CampusConnect.model.User;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
-
 
 public class CustomUserDetails implements UserDetails {
 
@@ -59,7 +56,20 @@ public class CustomUserDetails implements UserDetails {
         return user.getStatus() == User.Status.ACTIVE;
     }
 
-    // Optional helper
+    // ===== Custom getters =====
+
+    public Long getId() {
+        return user.getId();
+    }
+
+    public String getName() {
+        return user.getName();
+    }
+
+    public User.Role getRole() {
+        return user.getRole();
+    }
+
     public User getUser() {
         return user;
     }

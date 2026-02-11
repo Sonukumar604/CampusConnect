@@ -1,12 +1,13 @@
 package com.example.CampusConnect.security.jwt;
 
-
 import com.example.CampusConnect.security.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,45 +31,73 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
-
-        // 1️⃣ No token → continue filter chain
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // 🔹 Skip auth endpoints
+        String path = request.getServletPath();
+        if (path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 2️⃣ Extract token
-        jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt);
+        String jwt = extractToken(request);
 
-        // 3️⃣ Authenticate user if not already authenticated
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (jwt == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        try {
+            String username = jwtService.extractUsername(jwt);
 
-            // 4️⃣ Validate token
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+            if (username != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(username);
 
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                if (jwtService.isTokenValid(jwt, userDetails)) {
 
-                // 5️⃣ Set authentication
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource()
+                                    .buildDetails(request)
+                    );
+
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authToken);
+                }
+            }
+        } catch (Exception ex) {
+            // Invalid / expired / tampered token → clear context
+            SecurityContextHolder.clearContext();
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    // 🔐 Extract JWT from header OR cookie
+    private String extractToken(HttpServletRequest request) {
+
+        // 1️⃣ Authorization header
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        // 2️⃣ HttpOnly cookie
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("campusconnect_jwt".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
             }
         }
 
-        // 6️⃣ Continue filter chain
-        filterChain.doFilter(request, response);
+        return null;
     }
 }

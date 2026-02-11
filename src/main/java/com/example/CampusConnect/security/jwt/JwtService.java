@@ -1,12 +1,11 @@
 package com.example.CampusConnect.security.jwt;
 
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import lombok.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -17,20 +16,21 @@ import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
 
-import static javax.crypto.Cipher.SECRET_KEY;
 @Service
 public class JwtService {
 
     @Value("${jwt.secretKey}")
     private String jwtSecretKey;
 
-    private static final long JWT_EXPIRATION = 24 * 60 * 60 * 1000;
+    private static final long JWT_EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours
 
     private SecretKey getSecretKey() {
         return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
     }
 
+    // 🔐 Generate JWT
     public String generateToken(UserDetails userDetails) {
+
         List<String> roles = userDetails.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
@@ -45,21 +45,26 @@ public class JwtService {
                 .compact();
     }
 
+    // 🔍 Extract username (email)
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }
 
+    // ✅ Validate token
     public boolean isTokenValid(String token, UserDetails userDetails) {
         try {
             final String username = extractUsername(token);
-            return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+            return username.equals(userDetails.getUsername())
+                    && !isTokenExpired(token);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
 
     private boolean isTokenExpired(String token) {
-        return extractAllClaims(token).getExpiration().before(new Date());
+        return extractAllClaims(token)
+                .getExpiration()
+                .before(new Date());
     }
 
     private Claims extractAllClaims(String token) {
