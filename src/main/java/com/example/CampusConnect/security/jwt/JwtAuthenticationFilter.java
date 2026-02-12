@@ -7,6 +7,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
@@ -24,6 +27,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
 
+    @Autowired
+    @Qualifier("handlerExceptionResolver")
+    private HandlerExceptionResolver handlerExceptionResolver;
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -31,21 +38,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // 🔹 Skip auth endpoints
+        // 🔹 Skip authentication endpoints
         String path = request.getServletPath();
         if (path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String jwt = extractToken(request);
-
-        if (jwt == null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         try {
+
+            String jwt = extractToken(request);
+
+            if (jwt == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             String username = jwtService.extractUsername(jwt);
 
             if (username != null &&
@@ -72,15 +80,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .setAuthentication(authToken);
                 }
             }
-        } catch (Exception ex) {
-            // Invalid / expired / tampered token → clear context
-            SecurityContextHolder.clearContext();
-        }
 
-        filterChain.doFilter(request, response);
+            filterChain.doFilter(request, response);
+
+        } catch (Exception ex) {
+
+            // 🔐 Clear any partial authentication
+            SecurityContextHolder.clearContext();
+
+            // 🔥 Delegate to GlobalExceptionHandler
+            handlerExceptionResolver.resolveException(request, response, null, ex);
+
+            return; // stop filter chain
+        }
     }
 
-    // 🔐 Extract JWT from header OR cookie
     private String extractToken(HttpServletRequest request) {
 
         // 1️⃣ Authorization header
