@@ -3,6 +3,7 @@ package com.example.CampusConnect.service.Impl;
 import com.example.CampusConnect.dto.LoginRequestDTO;
 import com.example.CampusConnect.dto.LoginResponseDTO;
 import com.example.CampusConnect.dto.SignupRequestDTO;
+import com.example.CampusConnect.model.RefreshToken;
 import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.security.CustomUserDetails;
@@ -10,6 +11,7 @@ import com.example.CampusConnect.security.CustomUserDetailsService;
 import com.example.CampusConnect.security.jwt.JwtCookieUtil;
 import com.example.CampusConnect.security.jwt.JwtService;
 import com.example.CampusConnect.service.AuthService;
+import com.example.CampusConnect.service.RefreshTokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService userDetailsService;
+    private final RefreshTokenService refreshTokenService;
 
     // ========================
     // SIGNUP
@@ -79,9 +82,18 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userDetails.getUser();
 
+        // Generate Tokens
         String accessToken = jwtService.generateAccessToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
 
+        // Store Refresh Token in DB
+        refreshTokenService.createRefreshToken(
+                user,
+                refreshToken,
+                jwtService.getRefreshExpiration()
+        );
+
+        // Add HttpOnly Cookie
         jwtCookieUtil.addRefreshTokenCookie(response, refreshToken);
 
         return LoginResponseDTO.builder()
@@ -108,20 +120,33 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Refresh token not found");
         }
 
+        //  Step 1: Validate token exists in DB + not revoked + not expired
+        RefreshToken dbToken = refreshTokenService.verifyRefreshToken(refreshToken);
+
         String username = jwtService.extractUsername(refreshToken);
 
         CustomUserDetails userDetails =
                 (CustomUserDetails) userDetailsService.loadUserByUsername(username);
 
+        // Cryptographic validation
         if (!jwtService.isRefreshTokenValid(refreshToken, userDetails)) {
             throw new IllegalArgumentException("Invalid or expired refresh token");
         }
 
-        User user = userDetails.getUser();
+        User user = dbToken.getUser();
 
+        // Generate new tokens
         String newAccessToken = jwtService.generateAccessToken(userDetails);
         String newRefreshToken = jwtService.generateRefreshToken(userDetails);
 
+        // Store new refresh token in DB
+        refreshTokenService.createRefreshToken(
+                user,
+                newRefreshToken,
+                jwtService.getRefreshExpiration()
+        );
+
+        // Replace cookie
         jwtCookieUtil.addRefreshTokenCookie(response, newRefreshToken);
 
         return LoginResponseDTO.builder()

@@ -21,11 +21,12 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
+
     @Value("${jwt.access-expiration}")
     private long accessTokenExpiration;
 
-    @Value("${jwt.refresh-expiration}")
-    private long refreshTokenExpiration;
 
     private SecretKey getSecretKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
@@ -42,7 +43,8 @@ public class JwtService {
     // 🔁 REFRESH TOKEN
     // ==========================
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(userDetails, refreshTokenExpiration, "REFRESH");
+        return buildToken(userDetails, refreshExpiration, "REFRESH");
+
     }
 
     // 🔁 Common builder
@@ -120,5 +122,8 @@ public class JwtService {
     // 🔄 Backward compatibility
     public String generateToken(UserDetails userDetails) {
         return generateAccessToken(userDetails);
+    }
+    public long getRefreshExpiration() {
+        return refreshExpiration;
     }
 }
