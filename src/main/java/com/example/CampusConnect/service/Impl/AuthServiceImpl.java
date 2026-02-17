@@ -6,13 +6,17 @@ import com.example.CampusConnect.dto.SignupRequestDTO;
 import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.security.CustomUserDetails;
+import com.example.CampusConnect.security.CustomUserDetailsService;
 import com.example.CampusConnect.security.jwt.JwtCookieUtil;
 import com.example.CampusConnect.security.jwt.JwtService;
 import com.example.CampusConnect.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,51 +31,133 @@ public class AuthServiceImpl implements AuthService {
     private final JwtCookieUtil jwtCookieUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CustomUserDetailsService userDetailsService;
 
+    // ========================
+    // SIGNUP
+    // ========================
     @Override
     public void signup(@NotNull SignupRequestDTO dto) {
+
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Email already registered");
+        }
 
         User user = User.builder()
                 .name(dto.getName())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
-                .role(User.Role.STUDENT)
+                .role(dto.getRole())
                 .status(User.Status.ACTIVE)
                 .build();
 
         userRepository.save(user);
     }
 
+    // ========================
+    // LOGIN
+    // ========================
     @Override
     public LoginResponseDTO login(@NotNull LoginRequestDTO dto,
                                   HttpServletResponse response) {
 
-        // 1️⃣ Authenticate user
-        Authentication authentication =
-                authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(
-                                dto.getEmail(),
-                                dto.getPassword()
-                        )
-                );
+        Authentication authentication;
 
-        // 2️⃣ Extract authenticated user
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            dto.getEmail(),
+                            dto.getPassword()
+                    )
+            );
+        } catch (Exception ex) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
         CustomUserDetails userDetails =
                 (CustomUserDetails) authentication.getPrincipal();
 
-        // 3️⃣ Generate JWT
-        String token = jwtService.generateToken(userDetails);
+        User user = userDetails.getUser();
 
-        // 4️⃣ Store JWT in HttpOnly cookie
-        jwtCookieUtil.addJwtCookie(response, token);
+        String accessToken = jwtService.generateAccessToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-        // 5️⃣ Return response (token optional, useful for Postman)
-        return new LoginResponseDTO(
-                token,
-                userDetails.getUser().getId(),
-                userDetails.getUser().getName(),
-                userDetails.getUsername(),
-                userDetails.getUser().getRole()
-        );
+        jwtCookieUtil.addRefreshTokenCookie(response, refreshToken);
+
+        return LoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .userId(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .build();
+    }
+
+    // ========================
+    // REFRESH TOKEN
+    // ========================
+    @Override
+    public LoginResponseDTO refreshToken(HttpServletRequest request,
+                                         HttpServletResponse response) {
+
+        String refreshToken = extractRefreshToken(request);
+
+        if (refreshToken == null) {
+            throw new IllegalArgumentException("Refresh token not found");
+        }
+
+        String username = jwtService.extractUsername(refreshToken);
+
+        CustomUserDetails userDetails =
+                (CustomUserDetails) userDetailsService.loadUserByUsername(username);
+
+        if (!jwtService.isRefreshTokenValid(refreshToken, userDetails)) {
+            throw new IllegalArgumentException("Invalid or expired refresh token");
+        }
+
+        User user = userDetails.getUser();
+
+        String newAccessToken = jwtService.generateAccessToken(userDetails);
+        String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+
+        jwtCookieUtil.addRefreshTokenCookie(response, newRefreshToken);
+
+        return LoginResponseDTO.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .tokenType("Bearer")
+                .userId(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .build();
+    }
+
+    // ========================
+    // LOGOUT
+    // ========================
+    @Override
+    public void logout(HttpServletResponse response) {
+        jwtCookieUtil.clearRefreshTokenCookie(response);
+    }
+
+    // ========================
+    // HELPER
+    // ========================
+    private String extractRefreshToken(HttpServletRequest request) {
+
+        if (request.getCookies() == null) {
+            return null;
+        }
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("CC_REFRESH_TOKEN".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
     }
 }

@@ -1,10 +1,8 @@
 package com.example.CampusConnect.service.Impl;
 
 import com.example.CampusConnect.dto.CreateUserDTO;
-import com.example.CampusConnect.dto.LoginRequest;
 import com.example.CampusConnect.dto.UpdateUserDTO;
 import com.example.CampusConnect.dto.UserDTO;
-import com.example.CampusConnect.exceptions.AuthenticationException;
 import com.example.CampusConnect.exceptions.DuplicateResourceException;
 import com.example.CampusConnect.exceptions.ResourceNotFoundException;
 import com.example.CampusConnect.model.User;
@@ -14,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,52 +26,38 @@ public class UserServicesImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final PasswordEncoder passwordEncoder;
 
+    // ==========================
+    // CREATE USER (Admin Use)
+    // ==========================
     @Override
     public UserDTO registerUser(CreateUserDTO userDTO) {
 
         log.info("Attempting user registration | email={}", userDTO.getEmail());
 
-        if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
+        if (userRepository.existsByEmail(userDTO.getEmail())) {
             log.warn("Registration failed - email already exists | email={}", userDTO.getEmail());
             throw new DuplicateResourceException("Email already exists");
         }
 
         User user = modelMapper.map(userDTO, User.class);
-        user.setRole(User.Role.valueOf(userDTO.getRole()));
+
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setRole(User.Role.valueOf(userDTO.getRole().trim().toUpperCase()));
+        user.setStatus(User.Status.ACTIVE);
 
         User savedUser = userRepository.save(user);
 
         log.info("User registered successfully | userId={}, email={}",
                 savedUser.getId(), savedUser.getEmail());
 
-        return modelMapper.map(savedUser, UserDTO.class);
+        return mapToDTO(savedUser);
     }
 
-    @Override
-    public UserDTO loginUser(LoginRequest loginRequest) {
-
-        log.info("Login attempt | email={}", loginRequest.getEmail());
-
-        User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> {
-                    log.warn("Login failed - email not found | email={}", loginRequest.getEmail());
-                    return new AuthenticationException("Invalid email or password");
-                });
-
-        if (!user.getPassword().equals(loginRequest.getPassword())) {
-            log.warn("Login failed - incorrect password | email={}", loginRequest.getEmail());
-            throw new AuthenticationException("Invalid email or password");
-        }
-
-        UserDTO dto = modelMapper.map(user, UserDTO.class);
-        dto.setRole(user.getRole().name());
-
-        log.info("Login successful | userId={}, email={}", user.getId(), user.getEmail());
-
-        return dto;
-    }
-
+    // ==========================
+    // UPDATE USER
+    // ==========================
     @Override
     public UserDTO updateUser(Long userId, UpdateUserDTO updateUserDTO) {
 
@@ -81,14 +66,14 @@ public class UserServicesImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
                     log.error("User update failed - not found | userId={}", userId);
-                    return new ResourceNotFoundException("User not found: " + userId);
+                    return new ResourceNotFoundException("User not found with ID: " + userId);
                 });
 
         if (updateUserDTO.getName() != null)
             user.setName(updateUserDTO.getName());
 
         if (updateUserDTO.getPassword() != null)
-            user.setPassword(updateUserDTO.getPassword());
+            user.setPassword(passwordEncoder.encode(updateUserDTO.getPassword()));
 
         if (updateUserDTO.getRole() != null)
             user.setRole(User.Role.valueOf(updateUserDTO.getRole().trim().toUpperCase()));
@@ -97,12 +82,12 @@ public class UserServicesImpl implements UserService {
 
         log.info("User updated successfully | userId={}", saved.getId());
 
-        UserDTO out = modelMapper.map(saved, UserDTO.class);
-        out.setRole(saved.getRole().name());
-
-        return out;
+        return mapToDTO(saved);
     }
 
+    // ==========================
+    // DELETE USER
+    // ==========================
     @Override
     public void deleteUser(Long userId) {
 
@@ -119,6 +104,9 @@ public class UserServicesImpl implements UserService {
         log.warn("User deleted successfully | userId={}", userId);
     }
 
+    // ==========================
+    // GET USER BY ID
+    // ==========================
     @Override
     public UserDTO getUserById(Long id) {
 
@@ -130,12 +118,12 @@ public class UserServicesImpl implements UserService {
                     return new ResourceNotFoundException("User not found with ID: " + id);
                 });
 
-        UserDTO dto = modelMapper.map(user, UserDTO.class);
-        dto.setRole(user.getRole().name());
-
-        return dto;
+        return mapToDTO(user);
     }
 
+    // ==========================
+    // GET ALL USERS
+    // ==========================
     @Override
     public List<UserDTO> getAllUsers() {
 
@@ -146,11 +134,35 @@ public class UserServicesImpl implements UserService {
         log.info("Total users fetched | count={}", users.size());
 
         return users.stream()
-                .map(user -> {
-                    UserDTO dto = modelMapper.map(user, UserDTO.class);
-                    dto.setRole(user.getRole().name());
-                    return dto;
-                })
+                .map(this::mapToDTO)
                 .toList();
+    }
+
+    // ==========================
+    // GET USER BY EMAIL
+    // ==========================
+    @Override
+    public UserDTO getUserByEmail(String email) {
+
+        log.info("Fetching user by email | email={}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.error("User not found | email={}", email);
+                    return new ResourceNotFoundException("User not found");
+                });
+
+        return mapToDTO(user);
+    }
+
+    // ==========================
+    // PRIVATE MAPPER
+    // ==========================
+    private UserDTO mapToDTO(User user) {
+
+        UserDTO dto = modelMapper.map(user, UserDTO.class);
+        dto.setRole(user.getRole().name());
+
+        return dto;
     }
 }

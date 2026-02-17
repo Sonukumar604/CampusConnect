@@ -12,10 +12,12 @@ public interface UserService {
 
 
     UserDTO registerUser(CreateUserDTO userDTO);
-    UserDTO loginUser(LoginRequest loginRequest);
+
     UserDTO updateUser(Long userId, UpdateUserDTO updateUserDTO);
     void deleteUser(Long userId);
     UserDTO getUserById(Long id);
     List<UserDTO> getAllUsers();
+
+    UserDTO getUserByEmail(String email);
 
 }

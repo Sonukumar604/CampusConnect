@@ -1,13 +1,12 @@
 package com.example.CampusConnect.security.jwt;
 
 import com.example.CampusConnect.security.CustomUserDetailsService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,9 +26,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
 
-    @Autowired
     @Qualifier("handlerExceptionResolver")
-    private HandlerExceptionResolver handlerExceptionResolver;
+    private final HandlerExceptionResolver handlerExceptionResolver;
+
+
 
     @Override
     protected void doFilterInternal(
@@ -38,23 +38,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // 🔹 Skip authentication endpoints
-        String path = request.getServletPath();
-        if (path.startsWith("/api/auth")) {
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
 
-            String jwt = extractToken(request);
-
-            if (jwt == null) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            String username = jwtService.extractUsername(jwt);
+            String token = authHeader.substring(7);
+            String username = jwtService.extractUsername(token);
 
             if (username != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -62,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails =
                         userDetailsService.loadUserByUsername(username);
 
-                if (jwtService.isTokenValid(jwt, userDetails)) {
+                if (jwtService.isAccessTokenValid(token, userDetails)) {
 
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
@@ -81,37 +75,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
 
-            filterChain.doFilter(request, response);
-
-        } catch (Exception ex) {
-
-            // 🔐 Clear any partial authentication
+        } catch (JwtException ex) {
             SecurityContextHolder.clearContext();
-
-            // 🔥 Delegate to GlobalExceptionHandler
-            handlerExceptionResolver.resolveException(request, response, null, ex);
-
-            return; // stop filter chain
-        }
-    }
-
-    private String extractToken(HttpServletRequest request) {
-
-        // 1️⃣ Authorization header
-        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
+            handlerExceptionResolver.resolveException(
+                    request,
+                    response,
+                    null,
+                    ex
+            );
+            return;
         }
 
-        // 2️⃣ HttpOnly cookie
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("campusconnect_jwt".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-
-        return null;
+        filterChain.doFilter(request, response);
     }
 }

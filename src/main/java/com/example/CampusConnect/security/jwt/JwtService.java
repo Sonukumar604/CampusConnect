@@ -14,22 +14,41 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
-import java.util.function.Function;
 
 @Service
 public class JwtService {
 
-    @Value("${jwt.secretKey}")
-    private String jwtSecretKey;
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
-    private static final long JWT_EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours
+    @Value("${jwt.access-expiration}")
+    private long accessTokenExpiration;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshTokenExpiration;
 
     private SecretKey getSecretKey() {
-        return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // 🔐 Generate JWT
-    public String generateToken(UserDetails userDetails) {
+    // ==========================
+    // 🔐 ACCESS TOKEN
+    // ==========================
+    public String generateAccessToken(UserDetails userDetails) {
+        return buildToken(userDetails, accessTokenExpiration, "ACCESS");
+    }
+
+    // ==========================
+    // 🔁 REFRESH TOKEN
+    // ==========================
+    public String generateRefreshToken(UserDetails userDetails) {
+        return buildToken(userDetails, refreshTokenExpiration, "REFRESH");
+    }
+
+    // 🔁 Common builder
+    private String buildToken(UserDetails userDetails,
+                              long expiration,
+                              String tokenType) {
 
         List<String> roles = userDetails.getAuthorities()
                 .stream()
@@ -39,23 +58,46 @@ public class JwtService {
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
                 .claim("roles", roles)
+                .claim("tokenType", tokenType)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSecretKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // 🔍 Extract username (email)
+    // ==========================
+    // 🔍 Extraction Methods
+    // ==========================
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    // ✅ Validate token
-    public boolean isTokenValid(String token, UserDetails userDetails) {
+    public String extractTokenType(String token) {
+        return extractAllClaims(token).get("tokenType", String.class);
+    }
+
+    // ==========================
+    // ✅ Validation
+    // ==========================
+    public boolean isAccessTokenValid(String token, UserDetails userDetails) {
+        return isTokenValid(token, userDetails, "ACCESS");
+    }
+
+    public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
+        return isTokenValid(token, userDetails, "REFRESH");
+    }
+
+    private boolean isTokenValid(String token,
+                                 UserDetails userDetails,
+                                 String expectedType) {
         try {
             final String username = extractUsername(token);
+            final String tokenType = extractTokenType(token);
+
             return username.equals(userDetails.getUsername())
+                    && tokenType.equals(expectedType)
                     && !isTokenExpired(token);
+
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
@@ -73,5 +115,10 @@ public class JwtService {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    // 🔄 Backward compatibility
+    public String generateToken(UserDetails userDetails) {
+        return generateAccessToken(userDetails);
     }
 }

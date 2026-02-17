@@ -16,4 +16,5 @@ public interface UserRepository extends JpaRepository<User, Long> { //Inherit  r
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.hackathonsCreated WHERE u.id = :id")
     Optional<User> findUserWithHackathons(Long id);
 
+
 }

@@ -1,6 +1,7 @@
 package com.example.CampusConnect.security;
 
 import com.example.CampusConnect.security.jwt.JwtAuthenticationFilter;
+import com.example.CampusConnect.security.jwt.JwtEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +24,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
+    private final JwtEntryPoint jwtEntryPoint; // ✅ Added
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -34,6 +36,11 @@ public class SecurityConfig {
                 // Stateless session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // ✅ Add this block
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(jwtEntryPoint)
                 )
 
                 // Authorization rules
@@ -79,6 +86,7 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
     // ⚙️ Authentication manager (used in login)
     @Bean
     public AuthenticationManager authenticationManager(

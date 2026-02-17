@@ -20,6 +20,24 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    // ✅ Get current authenticated user
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserDTO>> getCurrentUser(
+            org.springframework.security.core.Authentication authentication) {
+
+        log.info("Request: fetch current authenticated user");
+
+        String email = authentication.getName();
+
+        UserDTO user = userService.getUserByEmail(email);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(200, "Current user fetched successfully", user)
+        );
+    }
+
+
+
     // ✅ Register
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserDTO>> registerUser(
@@ -35,20 +53,6 @@ public class UserController {
         );
     }
 
-    // ✅ Login
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserDTO>> loginUser(
-            @RequestBody LoginRequest loginRequest) {
-
-        log.info("User request: login");
-        log.debug("email={}", loginRequest.getEmail());
-
-        UserDTO loggedUser = userService.loginUser(loginRequest);
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(200, "Login successful", loggedUser)
-        );
-    }
 
     // ✅ Get all users
     @GetMapping
