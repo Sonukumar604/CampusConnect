@@ -15,12 +15,17 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('USER')")   //  Only USER can apply
+@Transactional                     //  Write-heavy service
 public class ScholarshipApplicationUserServiceImpl
         implements ScholarshipApplicationUserService {
 
@@ -32,6 +37,10 @@ public class ScholarshipApplicationUserServiceImpl
     private final UserRepository userRepo;
     private final ModelMapper mapper;
 
+    /* ============================================================
+       APPLY
+       ============================================================ */
+
     @Override
     public ScholarshipApplicationResponseDTO apply(
             Long userId,
@@ -40,24 +49,36 @@ public class ScholarshipApplicationUserServiceImpl
         log.info("Applying for scholarship | userId={}, scholarshipId={}",
                 userId, request.getScholarshipId());
 
+        // Prevent duplicate application
+        if (applicationRepo.existsByUserIdAndScholarshipId(
+                userId, request.getScholarshipId())) {
+
+            throw new IllegalArgumentException(
+                    "You have already applied for this scholarship");
+        }
+
         User user = userRepo.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("User not found while applying for scholarship | userId={}", userId);
-                    return new ResourceNotFoundException("User not found");
-                });
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
-        Scholarship scholarship = scholarshipRepo.findById(request.getScholarshipId())
-                .orElseThrow(() -> {
-                    log.error("Scholarship not found while applying | scholarshipId={}",
-                            request.getScholarshipId());
-                    return new ResourceNotFoundException("Scholarship not found");
-                });
+        Scholarship scholarship = scholarshipRepo
+                .findById(request.getScholarshipId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Scholarship not found"));
 
-        ScholarshipApplication application = new ScholarshipApplication();
-        application.setUser(user);
-        application.setScholarship(scholarship);
-        application.setSop(request.getStatementOfPurpose());
-        application.setStatus(ApplicationStatus.PENDING);
+        // Optional production safety: deadline check
+        if (scholarship.getDeadline() != null &&
+                scholarship.getDeadline().isBefore(LocalDate.now())) {
+
+            throw new IllegalStateException("Scholarship deadline has passed");
+        }
+
+        ScholarshipApplication application = ScholarshipApplication.builder()
+                .user(user)
+                .scholarship(scholarship)
+                .sop(request.getStatementOfPurpose())
+                .status(ApplicationStatus.PENDING)
+                .build();
 
         ScholarshipApplication saved = applicationRepo.save(application);
 
@@ -67,20 +88,19 @@ public class ScholarshipApplicationUserServiceImpl
         return mapper.map(saved, ScholarshipApplicationResponseDTO.class);
     }
 
+    /* ============================================================
+       GET MY APPLICATIONS
+       ============================================================ */
+
     @Override
+    @Transactional(readOnly = true)
     public List<ScholarshipApplicationResponseDTO> getMyApplications(Long userId) {
 
         log.info("Fetching scholarship applications for user | userId={}", userId);
 
-        List<ScholarshipApplicationResponseDTO> applications =
-                applicationRepo.findByUserId(userId)
-                        .stream()
-                        .map(a -> mapper.map(a, ScholarshipApplicationResponseDTO.class))
-                        .toList();
-
-        log.info("Found {} scholarship applications for user | userId={}",
-                applications.size(), userId);
-
-        return applications;
+        return applicationRepo.findByUserId(userId)
+                .stream()
+                .map(a -> mapper.map(a, ScholarshipApplicationResponseDTO.class))
+                .toList();
     }
 }

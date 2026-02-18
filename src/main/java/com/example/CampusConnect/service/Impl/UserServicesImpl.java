@@ -5,6 +5,7 @@ import com.example.CampusConnect.dto.UpdateUserDTO;
 import com.example.CampusConnect.dto.UserDTO;
 import com.example.CampusConnect.exceptions.DuplicateResourceException;
 import com.example.CampusConnect.exceptions.ResourceNotFoundException;
+import com.example.CampusConnect.model.Role;
 import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.UserService;
@@ -44,7 +45,7 @@ public class UserServicesImpl implements UserService {
         User user = modelMapper.map(userDTO, User.class);
 
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        user.setRole(User.Role.valueOf(userDTO.getRole().trim().toUpperCase()));
+        user.setRole(Role.valueOf(userDTO.getRole().trim().toUpperCase()));
         user.setStatus(User.Status.ACTIVE);
 
         User savedUser = userRepository.save(user);
@@ -76,7 +77,7 @@ public class UserServicesImpl implements UserService {
             user.setPassword(passwordEncoder.encode(updateUserDTO.getPassword()));
 
         if (updateUserDTO.getRole() != null)
-            user.setRole(User.Role.valueOf(updateUserDTO.getRole().trim().toUpperCase()));
+            user.setRole(Role.valueOf(updateUserDTO.getRole().trim().toUpperCase()));
 
         User saved = userRepository.save(user);
 

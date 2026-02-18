@@ -11,13 +11,15 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN ONLY
 @Transactional
 public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
 
@@ -28,6 +30,9 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
     private final UserRepository userRepository;
     private final ModelMapper mapper;
 
+    // =========================
+    // CREATE
+    // =========================
     @Override
     public ScholarshipDTO createScholarship(Long adminId, CreateScholarshipDTO dto) {
 
@@ -40,10 +45,18 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
                     return new ResourceNotFoundException("Admin not found");
                 });
 
+        ScholarshipCategory category;
+        try {
+            category = ScholarshipCategory.valueOf(dto.getCategory().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid scholarship category '{}'", dto.getCategory());
+            throw new IllegalArgumentException("Invalid scholarship category");
+        }
+
         Scholarship s = Scholarship.builder()
                 .title(dto.getTitle())
                 .description(dto.getDescription())
-                .category(ScholarshipCategory.valueOf(dto.getCategory()))
+                .category(category)
                 .eligibilityCriteria(dto.getEligibilityCriteria())
                 .amount(dto.getAmount())
                 .deadline(dto.getDeadline())
@@ -59,8 +72,13 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
         return toDto(saved);
     }
 
+    // =========================
+    // UPDATE
+    // =========================
     @Override
-    public ScholarshipDTO updateScholarship(Long adminId, Long scholarshipId, UpdateScholarshipDTO dto) {
+    public ScholarshipDTO updateScholarship(Long adminId,
+                                            Long scholarshipId,
+                                            UpdateScholarshipDTO dto) {
 
         log.info("Admin [{}] updating scholarship [{}]", adminId, scholarshipId);
 
@@ -70,9 +88,17 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
                     return new ResourceNotFoundException("Scholarship not found");
                 });
 
+        try {
+            s.setCategory(
+                    ScholarshipCategory.valueOf(dto.getCategory().toUpperCase())
+            );
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid scholarship category '{}'", dto.getCategory());
+            throw new IllegalArgumentException("Invalid scholarship category");
+        }
+
         s.setTitle(dto.getTitle());
         s.setDescription(dto.getDescription());
-        s.setCategory(ScholarshipCategory.valueOf(dto.getCategory()));
         s.setEligibilityCriteria(dto.getEligibilityCriteria());
         s.setAmount(dto.getAmount());
         s.setDeadline(dto.getDeadline());
@@ -85,6 +111,9 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
         return toDto(s);
     }
 
+    // =========================
+    // DELETE
+    // =========================
     @Override
     public void deleteScholarship(Long adminId, Long scholarshipId) {
 
@@ -101,7 +130,11 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
         log.info("Scholarship deleted successfully | scholarshipId={}", scholarshipId);
     }
 
+    // =========================
+    // GET BY ID
+    // =========================
     @Override
+    @Transactional(readOnly = true)
     public ScholarshipDTO getScholarshipById(Long scholarshipId) {
 
         log.info("Fetching scholarship details | scholarshipId={}", scholarshipId);
@@ -115,9 +148,17 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
         return toDto(s);
     }
 
+    // =========================
+    // PAGINATION
+    // =========================
     @Override
+    @Transactional(readOnly = true)
     public PagedResponse<ScholarshipDTO> getScholarshipsPaged(
-            int page, int size, String sortBy, String sortDir, String category) {
+            int page,
+            int size,
+            String sortBy,
+            String sortDir,
+            String category) {
 
         log.info(
                 "Fetching scholarships (paged) | page={}, size={}, sortBy={}, sortDir={}, category={}",
@@ -132,9 +173,10 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
         if (category != null && !category.isBlank()) {
             try {
                 p = scholarshipRepository.findByCategory(
-                        ScholarshipCategory.valueOf(category), pageable);
+                        ScholarshipCategory.valueOf(category.toUpperCase()),
+                        pageable);
             } catch (IllegalArgumentException ex) {
-                log.warn("Invalid scholarship category filter '{}', returning all", category);
+                log.warn("Invalid scholarship category '{}', returning all", category);
                 p = scholarshipRepository.findAll(pageable);
             }
         } else {
@@ -145,7 +187,10 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
                 p.getNumberOfElements(), p.getTotalElements());
 
         return new PagedResponse<>(
-                p.getContent().stream().map(this::toDto).collect(Collectors.toList()),
+                p.getContent()
+                        .stream()
+                        .map(this::toDto)
+                        .collect(Collectors.toList()),
                 p.getNumber(),
                 p.getSize(),
                 p.getTotalElements(),
@@ -154,14 +199,43 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
         );
     }
 
-    // mapper
+    // =========================
+    // DTO MAPPER
+    // =========================
     private ScholarshipDTO toDto(Scholarship e) {
+
         ScholarshipDTO dto = mapper.map(e, ScholarshipDTO.class);
-        dto.setCreatedById(e.getCreatedBy() != null ? e.getCreatedByUser().getId() : null);
-        dto.setCreatedByName(e.getCreatedBy() != null ? e.getCreatedByUser().getName() : null);
-        dto.setApplicationCount(e.getApplications() != null ? e.getApplications().size() : 0);
-        dto.setCategory(e.getCategory() != null ? e.getCategory().name() : null);
-        dto.setPublishStatus(e.getPublishStatus() != null ? e.getPublishStatus().name() : null);
+
+        dto.setCreatedById(
+                e.getCreatedByUser() != null
+                        ? e.getCreatedByUser().getId()
+                        : null
+        );
+
+        dto.setCreatedByName(
+                e.getCreatedByUser() != null
+                        ? e.getCreatedByUser().getName()
+                        : null
+        );
+
+        dto.setApplicationCount(
+                e.getApplications() != null
+                        ? e.getApplications().size()
+                        : 0
+        );
+
+        dto.setCategory(
+                e.getCategory() != null
+                        ? e.getCategory().name()
+                        : null
+        );
+
+        dto.setPublishStatus(
+                e.getPublishStatus() != null
+                        ? e.getPublishStatus().name()
+                        : null
+        );
+
         return dto;
     }
 }

@@ -11,10 +11,11 @@ import com.example.CampusConnect.repository.HackathonRepository;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.HackathonRegistrationService;
 import com.example.CampusConnect.util.retry.OptimisticRetry;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,26 +24,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('USER')")   // Only USER can register
+@Transactional                     // Write-heavy service
 public class HackathonRegistrationServiceImpl
         implements HackathonRegistrationService {
 
     private static final Logger log =
             LoggerFactory.getLogger(HackathonRegistrationServiceImpl.class);
 
-    @Autowired
-    private HackathonRegistrationRepository registrationRepository;
+    private final HackathonRegistrationRepository registrationRepository;
+    private final HackathonRepository hackathonRepository;
+    private final UserRepository userRepository;
+    private final ModelMapper mapper;
 
-    @Autowired
-    private HackathonRepository hackathonRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ModelMapper mapper;
+    /* ============================================================
+       REGISTER USER
+       ============================================================ */
 
     @Override
-    @Transactional
     @OptimisticRetry // ✅ automatic retry on version conflict
     public HackathonRegistrationDTO registerUser(
             Long userId,
@@ -51,25 +51,22 @@ public class HackathonRegistrationServiceImpl
 
         log.info("User {} attempting to register for hackathon {}", userId, hackathonId);
 
-        if (registrationRepository.existsByUser_IdAndHackathon_Id(userId, hackathonId)) {
-            log.warn("Registration failed: user {} already registered for hackathon {}", userId, hackathonId);
+        // Prevent duplicate registration
+        if (registrationRepository
+                .existsByUser_IdAndHackathon_Id(userId, hackathonId)) {
             throw new IllegalArgumentException("Already registered");
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("Registration failed: user not found with id={}", userId);
-                    return new ResourceNotFoundException("User not found");
-                });
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
+        // Pessimistic lock query
         Hackathon hackathon = hackathonRepository.findByIdForUpdate(hackathonId)
-                .orElseThrow(() -> {
-                    log.error("Registration failed: hackathon not found with id={}", hackathonId);
-                    return new ResourceNotFoundException("Hackathon not found");
-                });
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hackathon not found"));
 
         if (!hackathon.isRegistrationsOpen()) {
-            log.warn("Registration closed for hackathon {}", hackathonId);
             throw new IllegalStateException("Registrations closed");
         }
 
@@ -83,26 +80,28 @@ public class HackathonRegistrationServiceImpl
                 .registrationDate(LocalDateTime.now())
                 .build();
 
-        HackathonRegistration saved = registrationRepository.save(registration);
+        HackathonRegistration saved =
+                registrationRepository.save(registration);
 
-        log.info("User {} successfully registered for hackathon {}", userId, hackathonId);
+        log.info("User {} successfully registered for hackathon {}",
+                userId, hackathonId);
 
         return mapper.map(saved, HackathonRegistrationDTO.class);
     }
 
+    /* ============================================================
+       GET USER REGISTRATIONS
+       ============================================================ */
+
     @Override
+    @Transactional(readOnly = true)
     public List<HackathonRegistrationDTO> getRegistrationsByUser(Long userId) {
 
         log.info("Fetching hackathon registrations for userId={}", userId);
 
-        List<HackathonRegistrationDTO> result =
-                registrationRepository.findByUser_Id(userId)
-                        .stream()
-                        .map(r -> mapper.map(r, HackathonRegistrationDTO.class))
-                        .collect(Collectors.toList());
-
-        log.info("Found {} hackathon registrations for userId={}", result.size(), userId);
-
-        return result;
+        return registrationRepository.findByUser_Id(userId)
+                .stream()
+                .map(r -> mapper.map(r, HackathonRegistrationDTO.class))
+                .collect(Collectors.toList());
     }
 }

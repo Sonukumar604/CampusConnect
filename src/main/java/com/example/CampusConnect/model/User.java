@@ -2,7 +2,6 @@ package com.example.CampusConnect.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
@@ -10,7 +9,7 @@ import java.util.*;
 
 @Entity
 @Table(name = "users")
-@Audited // ✅ Enable Envers for core User fields
+@Audited
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,17 +30,18 @@ public class User extends BaseAuditableEntity {
     private String email;
 
     @Column(nullable = false)
-    @NotAudited // ❌ Never audit passwords
+    @NotAudited
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role;
+    private Role role;   // ✅ uses external Role enum
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Status status = Status.ACTIVE;
 
-    @Version // 🔒 Optimistic Locking
+    @Version
     private Long version;
 
     /* ================= RELATIONSHIPS ================= */
@@ -75,12 +75,6 @@ public class User extends BaseAuditableEntity {
     private Set<Hackathon> judgingHackathons = new HashSet<>();
 
     /* ================= ENUMS ================= */
-
-    public enum Role {
-        STUDENT,
-        ORGANIZER,
-        ADMIN
-    }
 
     public enum Status {
         ACTIVE,

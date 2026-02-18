@@ -1,5 +1,6 @@
 package com.example.CampusConnect.security;
 
+import com.example.CampusConnect.model.Role;
 import com.example.CampusConnect.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -66,7 +67,7 @@ public class CustomUserDetails implements UserDetails {
         return user.getName();
     }
 
-    public User.Role getRole() {
+    public Role getRole() {
         return user.getRole();
     }
 

@@ -16,5 +16,6 @@ public interface AuthService {
     LoginResponseDTO refreshToken(HttpServletRequest request,
                                   HttpServletResponse response);
 
-    void logout(HttpServletResponse response);
+    void logout(HttpServletRequest request,
+                HttpServletResponse response);
 }

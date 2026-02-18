@@ -11,12 +11,15 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN ONLY
 public class ScholarshipApplicationAdminServiceImpl
         implements ScholarshipApplicationAdminService {
 
@@ -27,8 +30,13 @@ public class ScholarshipApplicationAdminServiceImpl
     private final ScholarshipRepository scholarshipRepo;
     private final ModelMapper mapper;
 
+    // =========================
+    // GET APPLICATIONS
+    // =========================
     @Override
-    public List<ScholarshipApplicationResponseDTO> getApplicationsForScholarship(Long scholarshipId) {
+    @Transactional(readOnly = true)
+    public List<ScholarshipApplicationResponseDTO>
+    getApplicationsForScholarship(Long scholarshipId) {
 
         log.info("Fetching applications for scholarship | scholarshipId={}", scholarshipId);
 
@@ -50,8 +58,13 @@ public class ScholarshipApplicationAdminServiceImpl
         return responses;
     }
 
+    // =========================
+    // UPDATE STATUS
+    // =========================
     @Override
-    public ScholarshipApplicationResponseDTO updateStatus(Long applicationId, String status) {
+    @Transactional
+    public ScholarshipApplicationResponseDTO
+    updateStatus(Long applicationId, String status) {
 
         log.info("Updating scholarship application status | applicationId={}, newStatus={}",
                 applicationId, status);
@@ -62,7 +75,15 @@ public class ScholarshipApplicationAdminServiceImpl
                     return new ResourceNotFoundException("Application not found");
                 });
 
-        application.setStatus(ApplicationStatus.valueOf(status));
+        ApplicationStatus parsedStatus;
+        try {
+            parsedStatus = ApplicationStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid application status '{}'", status);
+            throw new IllegalArgumentException("Invalid application status");
+        }
+
+        application.setStatus(parsedStatus);
 
         ScholarshipApplication updated = applicationRepo.save(application);
 

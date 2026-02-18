@@ -2,6 +2,7 @@
 package com.example.CampusConnect.repository;
 
 import com.example.CampusConnect.model.ScholarshipApplication;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,4 +14,6 @@ public interface ScholarshipApplicationRepository extends JpaRepository<Scholars
     List<ScholarshipApplication> findByUserId(Long userId);
 
     List<ScholarshipApplication> findByScholarshipId(Long scholarshipId);
+
+    boolean existsByUserIdAndScholarshipId(Long userId, @NotNull(message = "Scholarship ID is required") Long scholarshipId);
 }

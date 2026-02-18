@@ -52,4 +52,13 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public void deleteByUser(User user) {
         refreshTokenRepository.deleteByUser(user);
     }
+    @Override
+    public void revokeToken(String token) {
+
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+
+        refreshToken.setRevoked(true);
+        refreshTokenRepository.save(refreshToken);
+    }
 }

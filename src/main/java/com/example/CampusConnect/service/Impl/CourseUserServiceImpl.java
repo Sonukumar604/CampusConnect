@@ -12,33 +12,36 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('USER')")              // Only USER can access
+@Transactional(readOnly = true)              // Default: read-only optimization
 public class CourseUserServiceImpl implements CourseUserService {
 
     private static final Logger log =
             LoggerFactory.getLogger(CourseUserServiceImpl.class);
 
-    @Autowired
-    private CourseRepository courseRepository;
-
-    @Autowired
+    private final CourseRepository courseRepository;
     private final UserRepository userRepository;
-
     private final CourseEnrollmentRepository enrollmentRepository;
     private final ModelMapper mapper;
 
-    // ✅ Get all courses (paginated + sorted)
+    /* ============================================================
+       READ OPERATIONS (optimized via readOnly=true)
+       ============================================================ */
+
     @Override
     public Page<Course> getAllCoursesPaged(int page, int size, String sortBy, String sortDir) {
-        log.info("Fetching courses page={}, size={}, sortBy={}, sortDir={}",
+
+        log.info("Fetching courses | page={}, size={}, sortBy={}, sortDir={}",
                 page, size, sortBy, sortDir);
 
         Sort sort = sortDir.equalsIgnoreCase("asc")
@@ -46,83 +49,80 @@ public class CourseUserServiceImpl implements CourseUserService {
                 : Sort.by(sortBy).descending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Course> result = courseRepository.findAll(pageable);
-
-        log.info("Fetched {} courses in current page", result.getNumberOfElements());
-        return result;
+        return courseRepository.findAll(pageable);
     }
 
-    // ✅ Filter by Domain
     @Override
     public List<Course> filterByDomain(String domain) {
         log.info("Filtering courses by domain='{}'", domain);
         return courseRepository.findByDomainIgnoreCase(domain);
     }
 
-    // ✅ Filter by Technology
     @Override
     public List<Course> filterByTechnology(String technology) {
         log.info("Filtering courses by technology='{}'", technology);
         return courseRepository.findByTechnologyIgnoreCase(technology);
     }
 
-    // ✅ Filter by Instructor
     @Override
     public List<Course> filterByInstructor(String instructor) {
         log.info("Filtering courses by instructor='{}'", instructor);
         return courseRepository.findByInstructorIgnoreCase(instructor);
     }
 
-    // ✅ Filter by Enum CourseType
     @Override
     public List<Course> filterByCourseType(CourseType courseType) {
         log.info("Filtering courses by courseType={}", courseType);
         return courseRepository.findByCourseType(courseType);
     }
 
-    // ✅ Get only Free courses
     @Override
     public List<Course> getFreeCourses() {
         log.info("Fetching all free courses");
         return courseRepository.findByFreeTrue();
     }
 
-    // ✅ Get course details by ID
     @Override
     public Course getCourseById(Long id) {
-        log.info("Fetching course details for courseId={}", id);
+        log.info("Fetching course details | courseId={}", id);
 
-        Course course = courseRepository.findById(id).orElse(null);
-
-        if (course == null) {
-            log.warn("Course not found with id={}", id);
-        } else {
-            log.info("Course found with id={}", id);
-        }
-
-        return course;
+        return courseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
     }
 
     @Override
-    public CourseEnrollmentDTO enroll(Long userId, Long courseId, CourseEnrollmentRequest request) {
+    public List<CourseEnrollmentDTO> myEnrollments(Long userId) {
+
+        log.info("Fetching enrollments for userId={}", userId);
+
+        return enrollmentRepository.findByUserId(userId)
+                .stream()
+                .map(enrollment -> mapper.map(enrollment, CourseEnrollmentDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    /* ============================================================
+       WRITE OPERATION (requires full transaction)
+       ============================================================ */
+
+    @Override
+    @Transactional     //  Overrides readOnly=true for write operation
+    public CourseEnrollmentDTO enroll(Long userId,
+                                      Long courseId,
+                                      CourseEnrollmentRequest request) {
+
         log.info("User {} attempting to enroll in course {}", userId, courseId);
 
         if (enrollmentRepository.existsByUserIdAndCourseId(userId, courseId)) {
-            log.warn("Enrollment failed: user {} already enrolled in course {}", userId, courseId);
-            throw new IllegalArgumentException("Already enrolled");
+            log.warn("User {} already enrolled in course {}", userId, courseId);
+            throw new IllegalArgumentException("Already enrolled in this course");
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("Enrollment failed: user not found with id={}", userId);
-                    return new ResourceNotFoundException("User not found");
-                });
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> {
-                    log.error("Enrollment failed: course not found with id={}", courseId);
-                    return new ResourceNotFoundException("Course not found");
-                });
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         CourseEnrollment enrollment = CourseEnrollment.builder()
                 .user(user)
@@ -131,21 +131,9 @@ public class CourseUserServiceImpl implements CourseUserService {
                 .build();
 
         CourseEnrollment saved = enrollmentRepository.save(enrollment);
-        log.info("User {} successfully enrolled in course {}", userId, courseId);
+
+        log.info("Enrollment successful | userId={}, courseId={}", userId, courseId);
 
         return mapper.map(saved, CourseEnrollmentDTO.class);
-    }
-
-    @Override
-    public List<CourseEnrollmentDTO> myEnrollments(Long userId) {
-        log.info("Fetching enrollments for userId={}", userId);
-
-        List<CourseEnrollmentDTO> enrollments = enrollmentRepository.findByUserId(userId)
-                .stream()
-                .map(e -> mapper.map(e, CourseEnrollmentDTO.class))
-                .collect(Collectors.toList());
-
-        log.info("Found {} enrollments for userId={}", enrollments.size(), userId);
-        return enrollments;
     }
 }

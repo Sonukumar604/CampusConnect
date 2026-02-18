@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface ScholarshipApplicationUserService {
 
-    ScholarshipApplicationResponseDTO apply(Long userId, CreateScholarshipApplicationRequest request);
+    ScholarshipApplicationResponseDTO apply(Long UserId, CreateScholarshipApplicationRequest request);
 
     List<ScholarshipApplicationResponseDTO> getMyApplications(Long userId);
 }

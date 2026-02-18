@@ -5,8 +5,11 @@ import com.example.CampusConnect.dto.EventDTO;
 import com.example.CampusConnect.dto.UpdateEventDTO;
 import com.example.CampusConnect.exceptions.ResourceNotFoundException;
 import com.example.CampusConnect.model.Event;
+import com.example.CampusConnect.model.EventType;
 import com.example.CampusConnect.model.PublishStatus;
+import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.EventRepository;
+import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.EventAdminService;
 import com.example.CampusConnect.util.PagedResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,26 +17,34 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN ONLY
 public class EventAdminServiceImpl implements EventAdminService {
 
     private static final Logger log =
             LoggerFactory.getLogger(EventAdminServiceImpl.class);
 
     private final EventRepository eventRepository;
+    private final UserRepository userRepository;
     private final ModelMapper mapper;
-    private final com.example.CampusConnect.repository.UserRepository userRepository;
 
+    // =========================
+    // CREATE
+    // =========================
     @Override
+    @Transactional
     public EventDTO createEvent(Long adminId, CreateEventDTO dto) {
+
         log.info("Admin {} is creating a new event", adminId);
 
-        com.example.CampusConnect.model.User admin = userRepository.findById(adminId)
+        User admin = userRepository.findById(adminId)
                 .orElseThrow(() -> {
                     log.error("Event creation failed: Admin not found with id={}", adminId);
                     return new ResourceNotFoundException("Admin not found");
@@ -43,13 +54,19 @@ public class EventAdminServiceImpl implements EventAdminService {
         event.setCreatedByUser(admin);
 
         Event saved = eventRepository.save(event);
+
         log.info("Event created successfully with id={}", saved.getId());
 
         return toDto(saved);
     }
 
+    // =========================
+    // UPDATE
+    // =========================
     @Override
+    @Transactional
     public EventDTO updateEvent(Long adminId, UpdateEventDTO dto) {
+
         log.info("Admin {} is updating event id={}", adminId, dto.getId());
 
         Event event = eventRepository.findById(dto.getId())
@@ -58,17 +75,22 @@ public class EventAdminServiceImpl implements EventAdminService {
                     return new ResourceNotFoundException("Event not found");
                 });
 
-        // Optionally check admin privileges here
-
         mapper.map(dto, event);
+
         Event updated = eventRepository.save(event);
 
         log.info("Event updated successfully with id={}", updated.getId());
+
         return toDto(updated);
     }
 
+    // =========================
+    // DELETE
+    // =========================
     @Override
+    @Transactional
     public void deleteEvent(Long adminId, Long eventId) {
+
         log.info("Admin {} requested deletion of event id={}", adminId, eventId);
 
         Event event = eventRepository.findById(eventId)
@@ -78,11 +100,16 @@ public class EventAdminServiceImpl implements EventAdminService {
                 });
 
         eventRepository.delete(event);
+
         log.info("Event deleted successfully with id={}", eventId);
     }
 
+    // =========================
+    // GET BY ID
+    // =========================
     @Override
     public EventDTO getEventById(Long eventId) {
+
         log.info("Fetching event details for eventId={}", eventId);
 
         Event event = eventRepository.findById(eventId)
@@ -94,6 +121,9 @@ public class EventAdminServiceImpl implements EventAdminService {
         return toDto(event);
     }
 
+    // =========================
+    // PAGINATION + FILTER
+    // =========================
     @Override
     public PagedResponse<EventDTO> getEventsPaged(
             int page,
@@ -106,31 +136,45 @@ public class EventAdminServiceImpl implements EventAdminService {
                 page, size, sortBy, sortDir, filterType);
 
         Sort sort = Sort.by(sortBy);
-        sort = "desc".equalsIgnoreCase(sortDir) ? sort.descending() : sort.ascending();
+        sort = "desc".equalsIgnoreCase(sortDir)
+                ? sort.descending()
+                : sort.ascending();
+
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Event> p;
+
         if (filterType == null || filterType.isBlank()) {
-            log.debug("No event type filter applied");
+
             p = eventRepository.findAll(pageable);
+
         } else {
+
             try {
-                log.debug("Applying event type filter: {}", filterType);
+                EventType type = EventType.valueOf(filterType.toUpperCase());
+
                 p = eventRepository.findByEventTypeAndPublishStatus(
-                        com.example.CampusConnect.model.EventType.valueOf(filterType),
+                        type,
                         PublishStatus.PUBLISHED,
-                        pageable);
+                        pageable
+                );
+
             } catch (IllegalArgumentException ex) {
-                log.warn("Invalid event type filter '{}', fetching all events", filterType);
+
+                log.warn("Invalid event type '{}', fetching all events", filterType);
                 p = eventRepository.findAll(pageable);
             }
         }
 
         log.info("Fetched {} events (totalElements={})",
-                p.getNumberOfElements(), p.getTotalElements());
+                p.getNumberOfElements(),
+                p.getTotalElements());
 
         return new PagedResponse<>(
-                p.getContent().stream().map(this::toDto).collect(Collectors.toList()),
+                p.getContent()
+                        .stream()
+                        .map(this::toDto)
+                        .collect(Collectors.toList()),
                 p.getNumber(),
                 p.getSize(),
                 p.getTotalElements(),
@@ -139,7 +183,10 @@ public class EventAdminServiceImpl implements EventAdminService {
         );
     }
 
-    private EventDTO toDto(Event e) {
-        return mapper.map(e, EventDTO.class);
+    // =========================
+    // DTO MAPPER
+    // =========================
+    private EventDTO toDto(Event event) {
+        return mapper.map(event, EventDTO.class);
     }
 }

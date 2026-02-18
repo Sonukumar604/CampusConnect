@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('USER')")   // Only USER can register/cancel
+@Transactional                     // Write-heavy service
 public class EventRegistrationServiceImpl implements EventRegistrationService {
 
     private static final Logger log =
@@ -31,89 +34,96 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
     private final UserRepository userRepository;
     private final ModelMapper mapper;
 
+    /* ============================================================
+       REGISTER
+       ============================================================ */
+
     @Override
-    @Transactional // 🔒 Atomic operation
-    public EventRegistrationDTO register(Long userId, Long eventId, EventRegistrationRequest request) {
+    public EventRegistrationDTO register(
+            Long userId,
+            Long eventId,
+            EventRegistrationRequest request) {
 
         log.info("User {} attempting to register for event {}", userId, eventId);
 
+        // Prevent duplicate registration
         if (registrationRepository.existsByUserIdAndEventId(userId, eventId)) {
-            log.warn("Registration failed: user {} already registered for event {}", userId, eventId);
             throw new IllegalArgumentException("Already registered for this event");
         }
 
         var user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("Registration failed: user not found with id={}", userId);
-                    return new ResourceNotFoundException("User not found");
-                });
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         var event = eventRepository.findById(eventId)
-                .orElseThrow(() -> {
-                    log.error("Registration failed: event not found with id={}", eventId);
-                    return new ResourceNotFoundException("Event not found");
-                });
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
+        // Check registration limit
         if (event.getRegistrationLimit() != null &&
                 event.getRegistrations().size() >= event.getRegistrationLimit()) {
-
-            log.warn("Registration failed: event {} registration limit reached", eventId);
             throw new IllegalStateException("Registration limit reached");
         }
 
-        EventRegistration reg = EventRegistration.builder()
+        EventRegistration registration = EventRegistration.builder()
                 .event(event)
                 .user(user)
                 .notes(request != null ? request.getNotes() : null)
                 .build();
 
-        EventRegistration saved = registrationRepository.save(reg);
+        EventRegistration saved = registrationRepository.save(registration);
 
         log.info("User {} successfully registered for event {}", userId, eventId);
 
         return mapper.map(saved, EventRegistrationDTO.class);
     }
 
+    /* ============================================================
+       MY REGISTRATIONS
+       ============================================================ */
+
     @Override
+    @Transactional(readOnly = true)
     public List<EventRegistrationDTO> myRegistrations(Long userId) {
+
         log.info("Fetching registrations for userId={}", userId);
 
-        List<EventRegistrationDTO> result =
-                registrationRepository.findByUserId(userId)
-                        .stream()
-                        .map(r -> mapper.map(r, EventRegistrationDTO.class))
-                        .collect(Collectors.toList());
-
-        log.info("Found {} registrations for userId={}", result.size(), userId);
-        return result;
+        return registrationRepository.findByUserId(userId)
+                .stream()
+                .map(r -> mapper.map(r, EventRegistrationDTO.class))
+                .collect(Collectors.toList());
     }
+
+    /* ============================================================
+       LIST REGISTRATIONS FOR EVENT
+       ============================================================ */
 
     @Override
+    @Transactional(readOnly = true)
     public List<EventRegistrationDTO> listRegistrationsForEvent(Long eventId) {
+
         log.info("Fetching registrations for eventId={}", eventId);
 
-        List<EventRegistrationDTO> result =
-                registrationRepository.findByEventId(eventId)
-                        .stream()
-                        .map(r -> mapper.map(r, EventRegistrationDTO.class))
-                        .collect(Collectors.toList());
-
-        log.info("Found {} registrations for eventId={}", result.size(), eventId);
-        return result;
+        return registrationRepository.findByEventId(eventId)
+                .stream()
+                .map(r -> mapper.map(r, EventRegistrationDTO.class))
+                .collect(Collectors.toList());
     }
+
+    /* ============================================================
+       CANCEL
+       ============================================================ */
 
     @Override
     public void cancelRegistration(Long userId, Long eventId) {
+
         log.info("User {} attempting to cancel registration for event {}", userId, eventId);
 
-        var maybe = registrationRepository.findByUserIdAndEventId(userId, eventId)
-                .orElseThrow(() -> {
-                    log.error("Cancel failed: registration not found for user {} and event {}",
-                            userId, eventId);
-                    return new ResourceNotFoundException("Registration not found");
-                });
+        var registration = registrationRepository
+                .findByUserIdAndEventId(userId, eventId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Registration not found"));
 
-        registrationRepository.delete(maybe);
-        log.info("Registration cancelled successfully for user {} and event {}", userId, eventId);
+        registrationRepository.delete(registration);
+
+        log.info("Registration cancelled for user {} and event {}", userId, eventId);
     }
 }

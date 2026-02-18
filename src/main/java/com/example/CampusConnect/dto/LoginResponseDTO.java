@@ -1,6 +1,6 @@
 package com.example.CampusConnect.dto;
 
-import com.example.CampusConnect.model.User.Role;
+import com.example.CampusConnect.model.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

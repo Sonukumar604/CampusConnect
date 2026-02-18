@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN-ONLY SERVICE
 public class HackathonAdminServiceImpl implements HackathonAdminService {
 
     private static final Logger log =
@@ -34,7 +36,7 @@ public class HackathonAdminServiceImpl implements HackathonAdminService {
     private final ModelMapper mapper;
 
     @Override
-    @Transactional  // ✅ REQUIRED for optimistic locking
+    @Transactional
     public HackathonDTO createHackathon(CreateHackathonDTO dto, Long adminId) {
 
         log.info("Admin {} is creating a new hackathon", adminId);
@@ -59,7 +61,7 @@ public class HackathonAdminServiceImpl implements HackathonAdminService {
     }
 
     @Override
-    @Transactional  // ✅ REQUIRED
+    @Transactional
     public HackathonDTO updateHackathon(Long hackathonId, CreateHackathonDTO dto) {
 
         log.info("Updating hackathon with id={}", hackathonId);
@@ -70,7 +72,7 @@ public class HackathonAdminServiceImpl implements HackathonAdminService {
                     return new ResourceNotFoundException("Hackathon not found");
                 });
 
-        mapper.map(dto, existing); // updates fields safely
+        mapper.map(dto, existing);
 
         Hackathon updated = hackathonRepository.save(existing);
 
@@ -82,7 +84,7 @@ public class HackathonAdminServiceImpl implements HackathonAdminService {
     @Override
     public List<HackathonDTO> getAllHackathons() {
 
-        log.info("Fetching all hackathons");
+        log.info("Fetching all hackathons (ADMIN view)");
 
         List<HackathonDTO> result = hackathonRepository.findAll()
                 .stream()
@@ -165,7 +167,8 @@ public class HackathonAdminServiceImpl implements HackathonAdminService {
 
         Page<Hackathon> hackathons = hackathonRepository.findAll(pageable);
 
-        log.info("Fetched {} hackathons in current page", hackathons.getNumberOfElements());
+        log.info("Fetched {} hackathons in current page",
+                hackathons.getNumberOfElements());
 
         return hackathons.map(h -> mapper.map(h, HackathonDTO.class));
     }

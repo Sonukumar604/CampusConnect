@@ -1,7 +1,7 @@
 
 package com.example.CampusConnect.dto;
 
-import com.example.CampusConnect.model.User.Role;
+import com.example.CampusConnect.model.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
