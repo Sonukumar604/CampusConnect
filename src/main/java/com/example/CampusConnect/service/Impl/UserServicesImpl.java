@@ -166,4 +166,42 @@ public class UserServicesImpl implements UserService {
 
         return dto;
     }
+    @Override
+    public User findOrCreateOAuthUser(String email, String name, String provider) {
+
+        log.info("OAuth login attempt | email={}, provider={}", email, provider);
+
+        return userRepository.findByEmail(email)
+                .map(existingUser -> {
+
+                    // If user exists but provider not set, update it
+                    if (existingUser.getProvider() == null) {
+                        existingUser.setProvider(provider);
+                        userRepository.save(existingUser);
+                    }
+
+                    log.info("OAuth existing user found | userId={}", existingUser.getId());
+                    return existingUser;
+                })
+                .orElseGet(() -> {
+
+                    log.info("Creating new OAuth user | email={}", email);
+
+                    User newUser = User.builder()
+                            .email(email)
+                            .name(name)
+                            .provider(provider)
+                            .role(Role.STUDENT) // default role
+                            .status(User.Status.ACTIVE)
+                            // 🔐 Assign random encoded password (required for NOT NULL constraint)
+                            .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
+                            .build();
+
+                    User saved = userRepository.save(newUser);
+
+                    log.info("OAuth user created successfully | userId={}", saved.getId());
+
+                    return saved;
+                });
+    }
 }

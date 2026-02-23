@@ -1,10 +1,8 @@
 package com.example.CampusConnect.service.Impl;
-import com.example.CampusConnect.model.Role;
 
 import com.example.CampusConnect.dto.LoginRequestDTO;
 import com.example.CampusConnect.dto.LoginResponseDTO;
 import com.example.CampusConnect.dto.SignupRequestDTO;
-import com.example.CampusConnect.exceptions.ResourceNotFoundException;
 import com.example.CampusConnect.model.RefreshToken;
 import com.example.CampusConnect.model.Role;
 import com.example.CampusConnect.model.User;
@@ -20,10 +18,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final JwtCookieUtil jwtCookieUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final CustomUserDetailsService userDetailsService;
+    private final CustomUserDetailsService customUserDetailsService;
     private final RefreshTokenService refreshTokenService;
 
     // ========================
@@ -70,25 +64,22 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponseDTO login(@NotNull LoginRequestDTO dto,
                                   HttpServletResponse response) {
 
-        Authentication authentication;
+        CustomUserDetails userDetails;
 
         try {
-            authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            dto.getEmail(),
-                            dto.getPassword()
-                    )
-            );
-        } catch (BadCredentialsException ex) {
+            userDetails = (CustomUserDetails)
+                    customUserDetailsService.loadUserByUsername(dto.getEmail());
+        } catch (Exception ex) {
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        CustomUserDetails userDetails =
-                (CustomUserDetails) authentication.getPrincipal();
-
         User user = userDetails.getUser();
 
-        // 🚨 Prevent blocked users from logging in
+        // Validate password manually (clean + no circular dependency)
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
         if (user.getStatus() == User.Status.BLOCKED) {
             throw new IllegalStateException("User account is blocked");
         }
@@ -121,18 +112,16 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Refresh token not found");
         }
 
-        // 1️⃣ Extract username
         String username = jwtService.extractUsername(refreshTokenValue);
 
         CustomUserDetails userDetails =
-                (CustomUserDetails) userDetailsService.loadUserByUsername(username);
+                (CustomUserDetails) customUserDetailsService
+                        .loadUserByUsername(username);
 
-        // 2️⃣ Validate JWT signature
         if (!jwtService.isRefreshTokenValid(refreshTokenValue, userDetails)) {
             throw new IllegalArgumentException("Invalid or expired refresh token");
         }
 
-        // 3️⃣ Validate DB token
         RefreshToken dbToken =
                 refreshTokenService.verifyRefreshToken(refreshTokenValue);
 
@@ -142,10 +131,8 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalStateException("User account is blocked");
         }
 
-        // 4️⃣ Revoke old token
         refreshTokenService.revokeToken(refreshTokenValue);
 
-        // 5️⃣ Generate new tokens
         String newAccessToken = jwtService.generateAccessToken(userDetails);
         String newRefreshToken = jwtService.generateRefreshToken(userDetails);
 
@@ -178,13 +165,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     // ========================
-    // HELPER
+    // HELPERS
     // ========================
     private String extractRefreshToken(HttpServletRequest request) {
 
-        if (request.getCookies() == null) {
-            return null;
-        }
+        if (request.getCookies() == null) return null;
 
         for (Cookie cookie : request.getCookies()) {
             if ("CC_REFRESH_TOKEN".equals(cookie.getName())) {

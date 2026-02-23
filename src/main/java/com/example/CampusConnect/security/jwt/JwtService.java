@@ -33,21 +33,21 @@ public class JwtService {
     }
 
     // ==========================
-    // 🔐 ACCESS TOKEN
+    // ACCESS TOKEN
     // ==========================
     public String generateAccessToken(UserDetails userDetails) {
         return buildToken(userDetails, accessTokenExpiration, "ACCESS");
     }
 
     // ==========================
-    // 🔁 REFRESH TOKEN
+    // REFRESH TOKEN
     // ==========================
     public String generateRefreshToken(UserDetails userDetails) {
         return buildToken(userDetails, refreshExpiration, "REFRESH");
 
     }
 
-    // 🔁 Common builder
+    // Common builder
     private String buildToken(UserDetails userDetails,
                               long expiration,
                               String tokenType) {
@@ -68,7 +68,7 @@ public class JwtService {
     }
 
     // ==========================
-    // 🔍 Extraction Methods
+    // Extraction Methods
     // ==========================
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
@@ -79,7 +79,7 @@ public class JwtService {
     }
 
     // ==========================
-    // ✅ Validation
+    // Validation
     // ==========================
     public boolean isAccessTokenValid(String token, UserDetails userDetails) {
         return isTokenValid(token, userDetails, "ACCESS");
@@ -119,7 +119,7 @@ public class JwtService {
                 .getBody();
     }
 
-    // 🔄 Backward compatibility
+    // Backward compatibility
     public String generateToken(UserDetails userDetails) {
         return generateAccessToken(userDetails);
     }

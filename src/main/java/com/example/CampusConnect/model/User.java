@@ -81,4 +81,5 @@ public class User extends BaseAuditableEntity {
         BLOCKED,
         DELETED
     }
+    private String provider;
 }

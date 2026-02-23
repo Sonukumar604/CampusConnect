@@ -10,6 +10,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,9 +21,9 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-
+    private final AuthenticationManager authenticationManager;
     // ==============================
-    // ✅ SIGNUP
+    // SIGNUP
     // ==============================
     @PostMapping("/signup")
     public ResponseEntity<String> signup(
@@ -37,15 +40,27 @@ public class AuthController {
     // ==============================
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(
-            @Valid @RequestBody LoginRequestDTO dto,
-            HttpServletResponse response
-    ) {
-        LoginResponseDTO loginResponse = authService.login(dto, response);
-        return ResponseEntity.ok(loginResponse);
+            @RequestBody LoginRequestDTO dto,
+            HttpServletResponse response) {
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            dto.getEmail(),
+                            dto.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException ex) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
+        LoginResponseDTO result = authService.login(dto, response);
+
+        return ResponseEntity.ok(result);
     }
 
     // ==============================
-    // 🔁 REFRESH TOKEN
+    // REFRESH TOKEN
     // ==============================
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refreshToken(
@@ -59,7 +74,7 @@ public class AuthController {
     }
 
     // ==============================
-    // 🚪 LOGOUT
+    // LOGOUT
     // ==============================
     @PostMapping("/logout")
     public ResponseEntity<String> logout(

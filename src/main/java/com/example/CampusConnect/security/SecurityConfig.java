@@ -1,8 +1,12 @@
 package com.example.CampusConnect.security;
 
+import com.example.CampusConnect.handlers.OAuth2SuccessHandler;
 import com.example.CampusConnect.security.jwt.JwtAuthenticationFilter;
 import com.example.CampusConnect.security.jwt.JwtEntryPoint;
+import com.example.CampusConnect.security.jwt.JwtService;
+import com.example.CampusConnect.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,61 +24,87 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
-    private final JwtEntryPoint jwtEntryPoint; // ✅ Added
+    private final JwtEntryPoint jwtEntryPoint;
 
+    // ==============================
+    // OAuth2 Success Handler Bean
+    // ==============================
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public OAuth2SuccessHandler oAuth2SuccessHandler(
+            UserService userService,
+            CustomUserDetailsService customUserDetailsService,
+            JwtService jwtService,
+            @Value("${deploy.env:dev}") String deployEnv,
+            @Value("${frontend.url:http://localhost:3000}") String frontendUrl
+    ) {
+        return new OAuth2SuccessHandler(
+                userService,
+                customUserDetailsService,
+                jwtService,
+                deployEnv,
+                frontendUrl
+        );
+    }
+
+    // ==============================
+    // Security Filter Chain
+    // ==============================
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            OAuth2SuccessHandler oAuth2SuccessHandler
+    ) throws Exception {
 
         http
-                // Disable CSRF (JWT based)
                 .csrf(csrf -> csrf.disable())
 
-                // Stateless session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ Add this block
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(jwtEntryPoint)
                 )
 
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/public/**",
+                                "/oauth2/**",
+                                "/login/**"
+                        ).permitAll()
 
-                        // Public APIs
-                        .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
-
-                        // Admin-only APIs
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // User + Organizer APIs
                         .requestMatchers("/api/user/**")
                         .hasAnyRole("STUDENT", "ORGANIZER")
 
-                        // Any other request
                         .anyRequest().authenticated()
                 )
 
-                // Authentication provider
                 .authenticationProvider(authenticationProvider())
 
-                // JWT filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+
+                .oauth2Login(oauth ->
+                        oauth.successHandler(oAuth2SuccessHandler)
                 );
 
         return http.build();
     }
 
-    // 🔐 Authentication provider
+    // ==============================
+    // Authentication Provider
+    // ==============================
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -83,13 +113,17 @@ public class SecurityConfig {
         return provider;
     }
 
-    // 🔑 Password encoder
+    // ==============================
+    // Password Encoder
+    // ==============================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ⚙️ Authentication manager (used in login)
+    // ==============================
+    // Authentication Manager
+    // ==============================
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
