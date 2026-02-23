@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CampusConnect OAuth Success</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: #fff;
+            text-align: center;
+            padding-top: 100px;
+        }
+        .card {
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            width: 500px;
+            margin: auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 20px;
+            background: #4CAF50;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>OAuth Login Successful 🎉</h2>
+    <p>Your JWT token has been received.</p>
+
+    <textarea id="tokenBox"></textarea>
+    <br>
+    <button onclick="callProtected()">Call Protected API</button>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+        document.getElementById('tokenBox').value = token;
+        localStorage.setItem("accessToken", token);
+    }
+
+    function callProtected() {
+        fetch("http://localhost:8080/api/user/profile", {
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem("accessToken")
+            }
+        })
+        .then(res => res.json())
+        .then(data => alert(JSON.stringify(data, null, 2)))
+        .catch(err => alert("Error: " + err));
+    }
+</script>
+
+</body>
+</html>

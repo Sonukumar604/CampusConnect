@@ -39,16 +39,12 @@ public class SecurityConfig {
     public OAuth2SuccessHandler oAuth2SuccessHandler(
             UserService userService,
             CustomUserDetailsService customUserDetailsService,
-            JwtService jwtService,
-            @Value("${deploy.env:dev}") String deployEnv,
-            @Value("${frontend.url:http://localhost:3000}") String frontendUrl
+            JwtService jwtService
     ) {
         return new OAuth2SuccessHandler(
                 userService,
                 customUserDetailsService,
-                jwtService,
-                deployEnv,
-                frontendUrl
+                jwtService
         );
     }
 
@@ -77,7 +73,9 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/public/**",
                                 "/oauth2/**",
-                                "/login/**"
+                                "/login/**",
+                                "/oauth-success.html",
+                                "/error"
                         ).permitAll()
 
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

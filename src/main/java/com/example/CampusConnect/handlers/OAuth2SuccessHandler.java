@@ -25,9 +25,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtService jwtService;
 
-    private final String deployEnv;
-    private final String frontendUrl;
-
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -52,24 +49,30 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("OAuth2 login success for email: {}", email);
 
+        // Create or fetch user
         User user = userService.findOrCreateOAuthUser(email, name, provider);
 
+        // Load UserDetails
         UserDetails userDetails =
                 customUserDetailsService.loadUserByUsername(user.getEmail());
 
+        // Generate tokens
         String accessToken = jwtService.generateAccessToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-        // Secure refresh cookie
+        // Store refresh token in HttpOnly cookie
         Cookie refreshCookie = new Cookie("CC_REFRESH_TOKEN", refreshToken);
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure("production".equalsIgnoreCase(deployEnv));
+        refreshCookie.setSecure(false); // true only in HTTPS production
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(7 * 24 * 60 * 60);
 
         response.addCookie(refreshCookie);
 
-        String redirectUrl = frontendUrl + "/oauth-success?token=" + accessToken;
+        // Redirect to static HTML page
+        String redirectUrl =
+                "http://localhost:8080/oauth-success.html?token=" + accessToken;
+
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
         clearAuthenticationAttributes(request);
