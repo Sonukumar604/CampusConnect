@@ -1,69 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CampusConnect OAuth Success</title>
+    <title>CampusConnect - OAuth Success</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
             background: #111;
             color: #fff;
-            text-align: center;
-            padding-top: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
+
         .card {
             background: #1e1e1e;
-            padding: 30px;
+            padding: 40px;
             border-radius: 12px;
-            width: 500px;
-            margin: auto;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(0,0,0,0.6);
         }
+
+        h2 {
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #ccc;
+            margin-bottom: 25px;
+        }
+
         button {
-            padding: 10px 20px;
-            margin-top: 20px;
+            padding: 12px 24px;
             background: #4CAF50;
             border: none;
             color: white;
             border-radius: 6px;
             cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
         }
-        textarea {
-            width: 100%;
-            height: 120px;
-            margin-top: 15px;
+
+        button:hover {
+            background: #43a047;
         }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>OAuth Login Successful 🎉</h2>
-    <p>Your JWT token has been received.</p>
-
-    <textarea id="tokenBox"></textarea>
-    <br>
+    <h2>OAuth Login Successful</h2>
+    <p>You are now authenticated securely.</p>
     <button onclick="callProtected()">Call Protected API</button>
 </div>
 
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-
-    if (token) {
-        document.getElementById('tokenBox').value = token;
-        localStorage.setItem("accessToken", token);
-    }
-
     function callProtected() {
-        fetch("http://localhost:8080/api/user/profile", {
-            headers: {
-                "Authorization": "Bearer " + localStorage.getItem("accessToken")
+        fetch("http://localhost:8080/api/users/me", {
+  method: "GET",
+  credentials: "include"
+})
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Request failed with status " + response.status);
             }
+            return response.json();
         })
-        .then(res => res.json())
-        .then(data => alert(JSON.stringify(data, null, 2)))
-        .catch(err => alert("Error: " + err));
+        .then(data => {
+            alert(JSON.stringify(data, null, 2));
+        })
+        .catch(error => {
+            alert("Error: " + error.message);
+        });
     }
 </script>
 

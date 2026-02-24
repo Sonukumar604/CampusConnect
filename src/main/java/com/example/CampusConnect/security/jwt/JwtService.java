@@ -28,6 +28,9 @@ public class JwtService {
     private long accessTokenExpiration;
 
 
+    public long getAccessExpiration() {
+        return accessTokenExpiration;
+    }
     private SecretKey getSecretKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }

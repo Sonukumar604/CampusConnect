@@ -75,7 +75,6 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userDetails.getUser();
 
-        // Validate password manually (clean + no circular dependency)
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("Invalid email or password");
         }
@@ -93,6 +92,8 @@ public class AuthServiceImpl implements AuthService {
                 jwtService.getRefreshExpiration()
         );
 
+        // IMPORTANT: set BOTH cookies
+        jwtCookieUtil.addAccessTokenCookie(response, accessToken);
         jwtCookieUtil.addRefreshTokenCookie(response, refreshToken);
 
         return buildLoginResponse(user, accessToken, refreshToken);
@@ -131,6 +132,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalStateException("User account is blocked");
         }
 
+        // Revoke old refresh token (rotation)
         refreshTokenService.revokeToken(refreshTokenValue);
 
         String newAccessToken = jwtService.generateAccessToken(userDetails);
@@ -142,6 +144,8 @@ public class AuthServiceImpl implements AuthService {
                 jwtService.getRefreshExpiration()
         );
 
+        // IMPORTANT: rotate BOTH cookies
+        jwtCookieUtil.addAccessTokenCookie(response, newAccessToken);
         jwtCookieUtil.addRefreshTokenCookie(response, newRefreshToken);
 
         return buildLoginResponse(user, newAccessToken, newRefreshToken);
@@ -161,6 +165,8 @@ public class AuthServiceImpl implements AuthService {
             refreshTokenService.revokeToken(refreshToken);
         }
 
+        // Clear BOTH cookies
+        jwtCookieUtil.clearAccessTokenCookie(response);
         jwtCookieUtil.clearRefreshTokenCookie(response);
     }
 

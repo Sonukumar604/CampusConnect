@@ -2,6 +2,7 @@ package com.example.CampusConnect.security;
 
 import com.example.CampusConnect.handlers.OAuth2SuccessHandler;
 import com.example.CampusConnect.security.jwt.JwtAuthenticationFilter;
+import com.example.CampusConnect.security.jwt.JwtCookieUtil;
 import com.example.CampusConnect.security.jwt.JwtEntryPoint;
 import com.example.CampusConnect.security.jwt.JwtService;
 import com.example.CampusConnect.service.UserService;
@@ -39,12 +40,14 @@ public class SecurityConfig {
     public OAuth2SuccessHandler oAuth2SuccessHandler(
             UserService userService,
             CustomUserDetailsService customUserDetailsService,
-            JwtService jwtService
+            JwtService jwtService,
+            JwtCookieUtil jwtCookieUtil
     ) {
         return new OAuth2SuccessHandler(
                 userService,
                 customUserDetailsService,
-                jwtService
+                jwtService,
+                jwtCookieUtil
         );
     }
 

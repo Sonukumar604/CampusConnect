@@ -10,7 +10,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 public class CampusconnectApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(CampusconnectApplication.class, args);
+
+        System.out.println("GOOGLE_CLIENT_ID = " + System.getenv("GOOGLE_CLIENT_ID"));
+        SpringApplication.run(CampusconnectApplication.class, args);
 	}
+
 
 }

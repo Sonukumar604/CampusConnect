@@ -8,7 +8,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtCookieUtil {
 
+    private static final String ACCESS_COOKIE_NAME = "CC_ACCESS_TOKEN";
     private static final String REFRESH_COOKIE_NAME = "CC_REFRESH_TOKEN";
+
+    @Value("${jwt.access-expiration}")
+    private long accessTokenExpiration;
 
     @Value("${jwt.refresh-expiration}")
     private long refreshTokenExpiration;
@@ -22,9 +26,32 @@ public class JwtCookieUtil {
     @Value("${cookie.domain:}")
     private String cookieDomain;
 
-    /**
-     * 🔐 Add Refresh Token as HttpOnly Cookie
-     */
+    /* ==============================
+       Add Access Token Cookie
+       ============================== */
+    public void addAccessTokenCookie(HttpServletResponse response,
+                                     String accessToken) {
+
+        Cookie cookie = new Cookie(ACCESS_COOKIE_NAME, accessToken);
+
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
+        cookie.setPath("/");
+
+        cookie.setMaxAge((int) (accessTokenExpiration / 1000));
+
+        if (!cookieDomain.isBlank()) {
+            cookie.setDomain(cookieDomain);
+        }
+
+        cookie.setAttribute("SameSite", sameSite);
+
+        response.addCookie(cookie);
+    }
+
+    /* ==============================
+       Add Refresh Token Cookie
+       ============================== */
     public void addRefreshTokenCookie(HttpServletResponse response,
                                       String refreshToken) {
 
@@ -32,25 +59,43 @@ public class JwtCookieUtil {
 
         cookie.setHttpOnly(true);
         cookie.setSecure(cookieSecure);
+
+        // Only sent to refresh endpoint
         cookie.setPath("/api/auth/refresh");
 
-        // Convert milliseconds → seconds
         cookie.setMaxAge((int) (refreshTokenExpiration / 1000));
 
-        // Set domain if provided
         if (!cookieDomain.isBlank()) {
             cookie.setDomain(cookieDomain);
         }
 
-        // SameSite attribute (modern browsers)
         cookie.setAttribute("SameSite", sameSite);
 
         response.addCookie(cookie);
     }
 
-    /**
-     * 🗑 Clear Refresh Token Cookie
-     */
+    /* ==============================
+       Clear Access Cookie
+       ============================== */
+    public void clearAccessTokenCookie(HttpServletResponse response) {
+
+        Cookie cookie = new Cookie(ACCESS_COOKIE_NAME, null);
+
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+
+        if (!cookieDomain.isBlank()) {
+            cookie.setDomain(cookieDomain);
+        }
+
+        response.addCookie(cookie);
+    }
+
+    /* ==============================
+       Clear Refresh Cookie
+       ============================== */
     public void clearRefreshTokenCookie(HttpServletResponse response) {
 
         Cookie cookie = new Cookie(REFRESH_COOKIE_NAME, null);
