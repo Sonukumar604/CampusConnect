@@ -1,5 +1,6 @@
 package com.example.CampusConnect.model;
 
+import com.example.CampusConnect.security.oauth.model.AuthProvider;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.envers.Audited;
@@ -81,5 +82,9 @@ public class User extends BaseAuditableEntity {
         BLOCKED,
         DELETED
     }
-    private String provider;
+    @Enumerated(EnumType.STRING)
+    private AuthProvider provider;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 }

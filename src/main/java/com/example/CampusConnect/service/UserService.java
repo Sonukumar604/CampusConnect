@@ -5,6 +5,7 @@ import com.example.CampusConnect.dto.LoginRequest;
 import com.example.CampusConnect.dto.UpdateUserDTO;
 import com.example.CampusConnect.dto.UserDTO;
 import com.example.CampusConnect.model.User;
+import com.example.CampusConnect.security.oauth.model.AuthProvider;
 
 
 import java.util.List;
@@ -24,5 +25,5 @@ public interface UserService {
 
     UserDTO getUserByEmail(String email);
 
-    User findOrCreateOAuthUser(String email, String name, String provider);
+    User findOrCreateOAuthUser(String email, String name, AuthProvider provider);
 }

@@ -2,12 +2,9 @@ package com.example.CampusConnect.security;
 
 import com.example.CampusConnect.handlers.OAuth2SuccessHandler;
 import com.example.CampusConnect.security.jwt.JwtAuthenticationFilter;
-import com.example.CampusConnect.security.jwt.JwtCookieUtil;
 import com.example.CampusConnect.security.jwt.JwtEntryPoint;
-import com.example.CampusConnect.security.jwt.JwtService;
-import com.example.CampusConnect.service.UserService;
+import com.example.CampusConnect.security.oauth.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -32,33 +29,14 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtEntryPoint jwtEntryPoint;
-
-    // ==============================
-    // OAuth2 Success Handler Bean
-    // ==============================
-    @Bean
-    public OAuth2SuccessHandler oAuth2SuccessHandler(
-            UserService userService,
-            CustomUserDetailsService customUserDetailsService,
-            JwtService jwtService,
-            JwtCookieUtil jwtCookieUtil
-    ) {
-        return new OAuth2SuccessHandler(
-                userService,
-                customUserDetailsService,
-                jwtService,
-                jwtCookieUtil
-        );
-    }
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     // ==============================
     // Security Filter Chain
     // ==============================
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            OAuth2SuccessHandler oAuth2SuccessHandler
-    ) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
@@ -96,8 +74,11 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 )
 
-                .oauth2Login(oauth ->
-                        oauth.successHandler(oAuth2SuccessHandler)
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo ->
+                                userInfo.userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2SuccessHandler)
                 );
 
         return http.build();

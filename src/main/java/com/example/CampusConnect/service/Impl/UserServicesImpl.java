@@ -8,6 +8,7 @@ import com.example.CampusConnect.exceptions.ResourceNotFoundException;
 import com.example.CampusConnect.model.Role;
 import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.UserRepository;
+import com.example.CampusConnect.security.oauth.model.AuthProvider;
 import com.example.CampusConnect.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,10 +37,9 @@ public class UserServicesImpl implements UserService {
     @Override
     public UserDTO registerUser(CreateUserDTO userDTO) {
 
-        log.info("Attempting user registration | email={}", userDTO.getEmail());
+        log.info("Registering user | email={}", userDTO.getEmail());
 
         if (userRepository.existsByEmail(userDTO.getEmail())) {
-            log.warn("Registration failed - email already exists | email={}", userDTO.getEmail());
             throw new DuplicateResourceException("Email already exists");
         }
 
@@ -50,8 +51,7 @@ public class UserServicesImpl implements UserService {
 
         User savedUser = userRepository.save(user);
 
-        log.info("User registered successfully | userId={}, email={}",
-                savedUser.getId(), savedUser.getEmail());
+        log.info("User registered | userId={}", savedUser.getId());
 
         return mapToDTO(savedUser);
     }
@@ -62,26 +62,26 @@ public class UserServicesImpl implements UserService {
     @Override
     public UserDTO updateUser(Long userId, UpdateUserDTO updateUserDTO) {
 
-        log.info("Updating user | userId={}", userId);
-
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("User update failed - not found | userId={}", userId);
-                    return new ResourceNotFoundException("User not found with ID: " + userId);
-                });
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found with ID: " + userId)
+                );
 
-        if (updateUserDTO.getName() != null)
+        if (updateUserDTO.getName() != null) {
             user.setName(updateUserDTO.getName());
+        }
 
-        if (updateUserDTO.getPassword() != null)
+        if (updateUserDTO.getPassword() != null) {
             user.setPassword(passwordEncoder.encode(updateUserDTO.getPassword()));
+        }
 
-        if (updateUserDTO.getRole() != null)
+        if (updateUserDTO.getRole() != null) {
             user.setRole(Role.valueOf(updateUserDTO.getRole().trim().toUpperCase()));
+        }
 
         User saved = userRepository.save(user);
 
-        log.info("User updated successfully | userId={}", saved.getId());
+        log.info("User updated | userId={}", saved.getId());
 
         return mapToDTO(saved);
     }
@@ -92,17 +92,14 @@ public class UserServicesImpl implements UserService {
     @Override
     public void deleteUser(Long userId) {
 
-        log.warn("Deleting user | userId={}", userId);
-
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("Delete failed - user not found | userId={}", userId);
-                    return new ResourceNotFoundException("User not found with ID: " + userId);
-                });
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found with ID: " + userId)
+                );
 
         userRepository.delete(user);
 
-        log.warn("User deleted successfully | userId={}", userId);
+        log.warn("User deleted | userId={}", userId);
     }
 
     // ==========================
@@ -111,13 +108,10 @@ public class UserServicesImpl implements UserService {
     @Override
     public UserDTO getUserById(Long id) {
 
-        log.info("Fetching user by ID | userId={}", id);
-
         User user = userRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.error("User not found | userId={}", id);
-                    return new ResourceNotFoundException("User not found with ID: " + id);
-                });
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found with ID: " + id)
+                );
 
         return mapToDTO(user);
     }
@@ -128,13 +122,8 @@ public class UserServicesImpl implements UserService {
     @Override
     public List<UserDTO> getAllUsers() {
 
-        log.info("Fetching all users");
-
-        List<User> users = userRepository.findAll();
-
-        log.info("Total users fetched | count={}", users.size());
-
-        return users.stream()
+        return userRepository.findAll()
+                .stream()
                 .map(this::mapToDTO)
                 .toList();
     }
@@ -145,63 +134,60 @@ public class UserServicesImpl implements UserService {
     @Override
     public UserDTO getUserByEmail(String email) {
 
-        log.info("Fetching user by email | email={}", email);
-
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    log.error("User not found | email={}", email);
-                    return new ResourceNotFoundException("User not found");
-                });
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found")
+                );
 
         return mapToDTO(user);
+    }
+
+    // ==========================
+    // OAUTH USER HANDLING
+    // ==========================
+    @Override
+    public User findOrCreateOAuthUser(String email,
+                                      String name,
+                                      AuthProvider provider) {
+
+        log.info("OAuth login | email={}, provider={}", email, provider);
+
+        return userRepository.findByEmail(email)
+                .map(existingUser -> {
+
+                    if (existingUser.getProvider() == null) {
+                        existingUser.setProvider(provider);
+                        userRepository.save(existingUser);
+                    }
+
+                    return existingUser;
+                })
+                .orElseGet(() -> {
+
+                    User newUser = User.builder()
+                            .email(email)
+                            .name(name)
+                            .provider(provider)
+                            .role(Role.STUDENT)
+                            .status(User.Status.ACTIVE)
+                            // Required for NOT NULL password constraint
+                            .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                            .build();
+
+                    User saved = userRepository.save(newUser);
+
+                    log.info("OAuth user created | userId={}", saved.getId());
+
+                    return saved;
+                });
     }
 
     // ==========================
     // PRIVATE MAPPER
     // ==========================
     private UserDTO mapToDTO(User user) {
-
         UserDTO dto = modelMapper.map(user, UserDTO.class);
         dto.setRole(user.getRole().name());
-
         return dto;
-    }
-    @Override
-    public User findOrCreateOAuthUser(String email, String name, String provider) {
-
-        log.info("OAuth login attempt | email={}, provider={}", email, provider);
-
-        return userRepository.findByEmail(email)
-                .map(existingUser -> {
-
-                    // If user exists but provider not set, update it
-                    if (existingUser.getProvider() == null) {
-                        existingUser.setProvider(provider);
-                        userRepository.save(existingUser);
-                    }
-
-                    log.info("OAuth existing user found | userId={}", existingUser.getId());
-                    return existingUser;
-                })
-                .orElseGet(() -> {
-
-                    log.info("Creating new OAuth user | email={}", email);
-
-                    User newUser = User.builder()
-                            .email(email)
-                            .name(name)
-                            .provider(provider)
-                            .role(Role.STUDENT) // default role
-                            .status(User.Status.ACTIVE)
-                            // 🔐 Assign random encoded password (required for NOT NULL constraint)
-                            .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
-                            .build();
-
-                    User saved = userRepository.save(newUser);
-
-                    log.info("OAuth user created successfully | userId={}", saved.getId());
-
-                    return saved;
-                });
     }
 }
