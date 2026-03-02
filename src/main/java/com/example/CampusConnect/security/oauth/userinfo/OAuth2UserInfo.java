@@ -1,11 +1,21 @@
 package com.example.CampusConnect.security.oauth.userinfo;
 
-public interface OAuth2UserInfo {
-    String getId();
+import java.util.Map;
 
-    String getEmail();
+public abstract class OAuth2UserInfo {
 
-    String getName();
+    protected final Map<String, Object> attributes;
 
-    String getImageUrl();
+    protected OAuth2UserInfo(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public abstract String getId();
+    public abstract String getEmail();
+    public abstract String getName();
+    public abstract String getImageUrl();
 }

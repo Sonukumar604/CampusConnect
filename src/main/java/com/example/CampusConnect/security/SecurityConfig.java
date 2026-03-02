@@ -42,28 +42,31 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+        )
 
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(jwtEntryPoint)
                 )
 
+                //  VERY IMPORTANT
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/",
+                                "/login",
+                                "/login/**",
+                                "/error",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
                                 "/api/auth/**",
                                 "/api/public/**",
-                                "/oauth2/**",
-                                "/login/**",
-                                "/oauth-success.html",
-                                "/error"
+                                "/oauth-success.html"
                         ).permitAll()
-
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        .requestMatchers("/api/user/**")
-                        .hasAnyRole("STUDENT", "ORGANIZER")
-
+                        .requestMatchers("/api/user/**").hasAnyRole("STUDENT", "ORGANIZER")
                         .anyRequest().authenticated()
                 )
 

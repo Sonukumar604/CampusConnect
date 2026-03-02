@@ -164,12 +164,7 @@ public class GlobalExceptionHandler {
                 "Unsupported JWT token");
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
 
-        return buildResponse(HttpStatus.UNAUTHORIZED,
-                "JWT token is invalid or empty");
-    }
 
     /* ==========================
        GLOBAL FALLBACK

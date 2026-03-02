@@ -12,6 +12,8 @@ public class CampusconnectApplication {
 	public static void main(String[] args) {
 
         System.out.println("GOOGLE_CLIENT_ID = " + System.getenv("GOOGLE_CLIENT_ID"));
+        System.out.println("GITHUB_CLIENT_ID = " + System.getenv("GITHUB_CLIENT_ID"));
+
         SpringApplication.run(CampusconnectApplication.class, args);
 	}
 

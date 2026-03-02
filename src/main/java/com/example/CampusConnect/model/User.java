@@ -30,7 +30,7 @@ public class User extends BaseAuditableEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     @NotAudited
     private String password;
 
@@ -63,8 +63,7 @@ public class User extends BaseAuditableEntity {
     @NotAudited
     private List<InternshipApplication> internshipApplications = new ArrayList<>();
 
-    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
-    @NotAudited
+    @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL)
     private List<Course> coursesCreated = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)

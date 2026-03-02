@@ -32,6 +32,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+
+        String path = request.getRequestURI();
+
+        return path.startsWith("/oauth2")
+                || path.startsWith("/login")
+                || path.startsWith("/error")
+                || path.startsWith("/api/auth")
+                || path.equals("/oauth-success.html");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
@@ -43,6 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (token == null ||
                     SecurityContextHolder.getContext().getAuthentication() != null) {
+
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -57,7 +70,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserDetails userDetails =
                     userDetailsService.loadUserByUsername(username);
 
-            // Enforce ACCESS token type strictly
             if (!jwtService.isAccessTokenValid(token, userDetails)) {
                 filterChain.doFilter(request, response);
                 return;
@@ -99,9 +111,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         Cookie[] cookies = request.getCookies();
 
-        if (cookies == null) {
-            return null;
-        }
+        if (cookies == null) return null;
 
         for (Cookie cookie : cookies) {
             if (ACCESS_COOKIE_NAME.equals(cookie.getName())) {
