@@ -39,9 +39,6 @@ public class AuthServiceImpl implements AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final SessionService sessionService;
 
-    // ======================================
-    // SIGNUP
-    // ======================================
     @Override
     public void signup(SignupRequestDTO dto) {
 
@@ -53,16 +50,13 @@ public class AuthServiceImpl implements AuthService {
                 .name(dto.getName())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
-                .role(dto.getRole())
+                .role(Role.STUDENT)
                 .status(User.Status.ACTIVE)
                 .build();
 
         userRepository.save(user);
     }
 
-    // ======================================
-    // LOGIN
-    // ======================================
     @Override
     public LoginResponseDTO login(@NotNull LoginRequestDTO dto,
                                   HttpServletRequest request,
@@ -92,9 +86,6 @@ public class AuthServiceImpl implements AuthService {
         return buildLoginResponse(user, accessToken, refreshToken);
     }
 
-    // ======================================
-    // REFRESH TOKEN
-    // ======================================
     @Override
     public LoginResponseDTO refreshToken(HttpServletRequest request,
                                          HttpServletResponse response) {
@@ -117,7 +108,6 @@ public class AuthServiceImpl implements AuthService {
 
         String newAccessToken = jwtService.generateAccessToken(userDetails);
 
-        // Update activity timestamp
         sessionService.updateLastActive(session);
 
         setAuthCookies(response, newAccessToken, refreshToken);
@@ -125,9 +115,6 @@ public class AuthServiceImpl implements AuthService {
         return buildLoginResponse(user, newAccessToken, refreshToken);
     }
 
-    // ======================================
-    // LOGOUT
-    // ======================================
     @Override
     public void logout(HttpServletRequest request,
                        HttpServletResponse response) {
@@ -145,10 +132,6 @@ public class AuthServiceImpl implements AuthService {
 
         clearAuthCookies(response);
     }
-
-    // ======================================
-    // PRIVATE HELPERS
-    // ======================================
 
     private CustomUserDetails loadAndValidateUser(String email, String password) {
 

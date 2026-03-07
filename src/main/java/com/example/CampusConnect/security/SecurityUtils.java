@@ -1,4 +1,3 @@
-
 package com.example.CampusConnect.security;
 
 import com.example.CampusConnect.model.User;
@@ -14,8 +13,7 @@ public class SecurityUtils {
 
     private final UserRepository userRepository;
 
-    public User getCurrentUser() {
-
+    private Authentication getAuthentication() {
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -23,10 +21,22 @@ public class SecurityUtils {
             throw new RuntimeException("Unauthenticated user");
         }
 
-        String email = authentication.getName();
+        return authentication;
+    }
+
+    public String getCurrentUserEmail() {
+        return getAuthentication().getName();
+    }
+
+    public User getCurrentUser() {
+
+        String email = getCurrentUserEmail();
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException("User not found in database"));
+    }
+    public Long getCurrentUserId() {
+        return getCurrentUser().getId();
     }
 }

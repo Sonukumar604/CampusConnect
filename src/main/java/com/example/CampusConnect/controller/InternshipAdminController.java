@@ -5,12 +5,14 @@ import com.example.CampusConnect.dto.InternshipDTO;
 import com.example.CampusConnect.service.InternshipAdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin/internships")
+@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class InternshipAdminController {
 

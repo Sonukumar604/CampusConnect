@@ -48,10 +48,6 @@ public class JwtCookieUtil {
 
         response.addCookie(cookie);
     }
-
-    /* ==============================
-       Add Refresh Token Cookie
-       ============================== */
     public void addRefreshTokenCookie(HttpServletResponse response,
                                       String refreshToken) {
 
@@ -74,9 +70,6 @@ public class JwtCookieUtil {
         response.addCookie(cookie);
     }
 
-    /* ==============================
-       Clear Access Cookie
-       ============================== */
     public void clearAccessTokenCookie(HttpServletResponse response) {
 
         Cookie cookie = new Cookie(ACCESS_COOKIE_NAME, null);
@@ -92,10 +85,6 @@ public class JwtCookieUtil {
 
         response.addCookie(cookie);
     }
-
-    /* ==============================
-       Clear Refresh Cookie
-       ============================== */
     public void clearRefreshTokenCookie(HttpServletResponse response) {
 
         Cookie cookie = new Cookie(REFRESH_COOKIE_NAME, null);

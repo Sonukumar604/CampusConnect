@@ -6,6 +6,7 @@ import com.example.CampusConnect.service.EventRegistrationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/events/registrations")
+@PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
 @RequiredArgsConstructor
 public class EventRegistrationController {
 

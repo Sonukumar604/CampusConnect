@@ -20,9 +20,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // ==============================
-    // SIGNUP
-    // ==============================
     @PostMapping("/signup")
     public ResponseEntity<String> signup(
             @Valid @RequestBody SignupRequestDTO signupRequestDTO
@@ -34,9 +31,6 @@ public class AuthController {
                 .body("User registered successfully");
     }
 
-    // ==============================
-    // LOGIN
-    // ==============================
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(
             @RequestBody LoginRequestDTO dto,
@@ -50,9 +44,6 @@ public class AuthController {
         return ResponseEntity.ok(result);
     }
 
-    // ==============================
-    // REFRESH TOKEN
-    // ==============================
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refreshToken(
             HttpServletRequest request,
@@ -65,9 +56,6 @@ public class AuthController {
         return ResponseEntity.ok(loginResponse);
     }
 
-    // ==============================
-    // LOGOUT
-    // ==============================
     @PostMapping("/logout")
     public ResponseEntity<String> logout(
             HttpServletRequest request,

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/scholarships")
+@PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
 @RequiredArgsConstructor
 public class ScholarshipUserController {
 

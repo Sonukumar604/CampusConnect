@@ -22,8 +22,6 @@ public class User extends BaseAuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /* ================= BASIC FIELDS ================= */
-
     @Column(nullable = false)
     private String name;
 
@@ -73,8 +71,6 @@ public class User extends BaseAuditableEntity {
     @ManyToMany(mappedBy = "judges")
     @NotAudited
     private Set<Hackathon> judgingHackathons = new HashSet<>();
-
-    /* ================= ENUMS ================= */
 
     public enum Status {
         ACTIVE,

@@ -30,21 +30,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         OAuth2User oauth2User = super.loadUser(request);
 
-        // 1️⃣ Extract provider (google / github)
         String registrationId =
                 request.getClientRegistration().getRegistrationId();
 
         AuthProvider provider =
                 AuthProvider.valueOf(registrationId.toUpperCase(Locale.ROOT));
 
-        // 2️⃣ Extract provider-specific user info
         OAuth2UserInfo userInfo =
                 OAuth2UserInfoFactory.getOAuth2UserInfo(
                         registrationId,
                         oauth2User.getAttributes()
                 );
-
-        // 3️⃣ Fix email (GitHub may return null)
         String email = userInfo.getEmail();
 
         if (email == null || email.isBlank()) {
@@ -52,15 +48,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         String finalEmail = email;
-
-        // 4️⃣ Find or create user
         User user = userRepository.findByEmail(finalEmail)
                 .map(existingUser ->
                         updateExistingUser(existingUser, userInfo, provider))
                 .orElseGet(() ->
                         registerNewUser(finalEmail, userInfo, provider));
 
-        // 5️⃣ Return Spring Security principal
         Map<String, Object> attributes =
                 new HashMap<>(oauth2User.getAttributes());
         attributes.put("email", finalEmail);
@@ -71,10 +64,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 "email"
         );
     }
-
-    // ===============================
-    // REGISTER NEW USER
-    // ===============================
     private User registerNewUser(String email,
                                  OAuth2UserInfo userInfo,
                                  AuthProvider provider) {
@@ -86,22 +75,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         user.setProvider(provider);
         user.setImageUrl(userInfo.getImageUrl());
 
-        // Required NOT NULL fields
         user.setPassword("OAUTH_USER");
-        user.setRole(Role.STUDENT);     // default role
+        user.setRole(Role.STUDENT);
         user.setStatus(User.Status.ACTIVE);
 
         return userRepository.save(user);
     }
 
-    // ===============================
-    // UPDATE EXISTING USER
-    // ===============================
     private User updateExistingUser(User existingUser,
                                     OAuth2UserInfo userInfo,
                                     AuthProvider provider) {
 
-        // Prevent provider mismatch
         if (existingUser.getProvider() != null &&
                 !existingUser.getProvider().equals(provider)) {
 

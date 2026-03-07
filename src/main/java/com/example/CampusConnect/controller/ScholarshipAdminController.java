@@ -6,12 +6,14 @@ import com.example.CampusConnect.util.PagedResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin/scholarships")
+@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class ScholarshipAdminController {
 

@@ -32,9 +32,6 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
-    // ==============================
-    // Security Filter Chain
-    // ==============================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -42,8 +39,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-        )
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(jwtEntryPoint)
@@ -54,19 +51,29 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())
 
                 .authorizeHttpRequests(auth -> auth
+
+
                         .requestMatchers(
                                 "/",
-                                "/login",
-                                "/login/**",
                                 "/error",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
+                                "/oauth-success.html",
                                 "/api/auth/**",
-                                "/api/public/**",
-                                "/oauth-success.html"
+                                "/api/public/**"
                         ).permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/user/**").hasAnyRole("STUDENT", "ORGANIZER")
+
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+
+                        .requestMatchers("/api/organizer/**")
+                        .hasAnyRole("ORGANIZER", "ADMIN")
+
+
+                        .requestMatchers("/api/student/**")
+                        .hasAnyRole("STUDENT", "ADMIN")
+
                         .anyRequest().authenticated()
                 )
 
@@ -87,9 +94,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ==============================
-    // Authentication Provider
-    // ==============================
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -98,17 +102,11 @@ public class SecurityConfig {
         return provider;
     }
 
-    // ==============================
-    // Password Encoder
-    // ==============================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ==============================
-    // Authentication Manager
-    // ==============================
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
