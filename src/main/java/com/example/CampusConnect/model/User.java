@@ -34,7 +34,7 @@ public class User extends BaseAuditableEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role;   // ✅ uses external Role enum
+    private Role role;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -43,7 +43,6 @@ public class User extends BaseAuditableEntity {
     @Version
     private Long version;
 
-    /* ================= RELATIONSHIPS ================= */
 
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL)
     @NotAudited

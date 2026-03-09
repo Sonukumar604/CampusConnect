@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 public class SecurityUtils {
 
     private final UserRepository userRepository;
-
     private Authentication getAuthentication() {
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
@@ -20,7 +19,6 @@ public class SecurityUtils {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new RuntimeException("Unauthenticated user");
         }
-
         return authentication;
     }
 
