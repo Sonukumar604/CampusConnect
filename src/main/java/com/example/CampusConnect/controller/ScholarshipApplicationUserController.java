@@ -2,17 +2,20 @@ package com.example.CampusConnect.controller;
 
 import com.example.CampusConnect.dto.CreateScholarshipApplicationRequest;
 import com.example.CampusConnect.service.ScholarshipApplicationUserService;
+
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/user/scholarship-applications")
-@PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
 @RequiredArgsConstructor
 public class ScholarshipApplicationUserController {
 
@@ -21,11 +24,15 @@ public class ScholarshipApplicationUserController {
 
     private final ScholarshipApplicationUserService service;
 
+    // ================= APPLY FOR SCHOLARSHIP =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_APPLICATION_CREATE')")
     @PostMapping("/{userId}/apply")
     public ResponseEntity<?> apply(
             @PathVariable Long userId,
             @Valid @RequestBody CreateScholarshipApplicationRequest request
     ) {
+
         log.info("User request: apply for scholarship");
         log.debug("userId={}", userId);
 
@@ -34,8 +41,12 @@ public class ScholarshipApplicationUserController {
         );
     }
 
+    // ================= USER APPLICATIONS =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_APPLICATION_VIEW')")
     @GetMapping("/{userId}")
     public ResponseEntity<?> myApplications(@PathVariable Long userId) {
+
         log.info("User request: fetch scholarship applications");
         log.debug("userId={}", userId);
 

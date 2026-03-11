@@ -123,11 +123,20 @@ public class AuthServiceImpl implements AuthService {
 
         if (refreshToken != null) {
             sessionService.findActiveSessionByRefreshToken(refreshToken)
-                    .ifPresent(session ->
-                            sessionService.deactivateSession(
-                                    session.getUser(),
-                                    session.getDeviceId()
-                            ));
+                    .ifPresent(session -> {
+
+                        User user = session.getUser();
+
+                        // deactivate session
+                        sessionService.deactivateSession(
+                                user,
+                                session.getDeviceId()
+                        );
+
+                        // Token version increment (invalidate old JWTs)
+                        user.setTokenVersion(user.getTokenVersion() + 1);
+                        userRepository.save(user);
+                    });
         }
 
         clearAuthCookies(response);

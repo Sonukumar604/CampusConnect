@@ -5,17 +5,20 @@ import com.example.CampusConnect.dto.EventDTO;
 import com.example.CampusConnect.dto.UpdateEventDTO;
 import com.example.CampusConnect.service.EventAdminService;
 import com.example.CampusConnect.util.PagedResponse;
+
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin/events")
-@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class EventAdminController {
 
@@ -24,6 +27,9 @@ public class EventAdminController {
 
     private final EventAdminService adminService;
 
+    // ================= CREATE EVENT =================
+
+    @PreAuthorize("hasAuthority('EVENT_CREATE')")
     @PostMapping("/{adminId}")
     public ResponseEntity<EventDTO> create(
             @PathVariable Long adminId,
@@ -32,9 +38,14 @@ public class EventAdminController {
         log.info("Admin request: create event");
         log.debug("adminId={}", adminId);
 
-        return ResponseEntity.ok(adminService.createEvent(adminId, dto));
+        return ResponseEntity.ok(
+                adminService.createEvent(adminId, dto)
+        );
     }
 
+    // ================= UPDATE EVENT =================
+
+    @PreAuthorize("hasAuthority('EVENT_UPDATE')")
     @PutMapping("/{adminId}")
     public ResponseEntity<EventDTO> update(
             @PathVariable Long adminId,
@@ -43,29 +54,44 @@ public class EventAdminController {
         log.info("Admin request: update event");
         log.debug("adminId={}", adminId);
 
-        return ResponseEntity.ok(adminService.updateEvent(adminId, dto));
+        return ResponseEntity.ok(
+                adminService.updateEvent(adminId, dto)
+        );
     }
 
+    // ================= DELETE EVENT =================
+
+    @PreAuthorize("hasAuthority('EVENT_DELETE')")
     @DeleteMapping("/{adminId}/{eventId}")
     public ResponseEntity<Void> delete(
             @PathVariable Long adminId,
             @PathVariable Long eventId) {
 
-        log.info("Admin request: delete event");
+        log.warn("Admin request: delete event");
         log.debug("adminId={}, eventId={}", adminId, eventId);
 
         adminService.deleteEvent(adminId, eventId);
+
         return ResponseEntity.noContent().build();
     }
 
+    // ================= GET EVENT =================
+
+    @PreAuthorize("hasAuthority('EVENT_UPDATE')")
     @GetMapping("/{eventId}")
     public ResponseEntity<EventDTO> getOne(@PathVariable Long eventId) {
+
         log.info("Admin request: fetch event by id");
         log.debug("eventId={}", eventId);
 
-        return ResponseEntity.ok(adminService.getEventById(eventId));
+        return ResponseEntity.ok(
+                adminService.getEventById(eventId)
+        );
     }
 
+    // ================= PAGED EVENTS =================
+
+    @PreAuthorize("hasAuthority('EVENT_UPDATE')")
     @GetMapping("/paged")
     public ResponseEntity<PagedResponse<EventDTO>> paged(
             @RequestParam(defaultValue = "0") int page,

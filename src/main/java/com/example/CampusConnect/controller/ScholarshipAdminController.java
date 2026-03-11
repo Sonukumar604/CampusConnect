@@ -3,17 +3,20 @@ package com.example.CampusConnect.controller;
 import com.example.CampusConnect.dto.*;
 import com.example.CampusConnect.service.ScholarshipAdminService;
 import com.example.CampusConnect.util.PagedResponse;
+
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin/scholarships")
-@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class ScholarshipAdminController {
 
@@ -22,6 +25,9 @@ public class ScholarshipAdminController {
 
     private final ScholarshipAdminService adminService;
 
+    // ================= CREATE SCHOLARSHIP =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_CREATE')")
     @PostMapping("/{adminId}")
     public ResponseEntity<ScholarshipDTO> create(
             @PathVariable Long adminId,
@@ -33,9 +39,13 @@ public class ScholarshipAdminController {
         ScholarshipDTO response = adminService.createScholarship(adminId, dto);
 
         log.info("Scholarship created successfully with id {}", response.getId());
+
         return ResponseEntity.ok(response);
     }
 
+    // ================= UPDATE SCHOLARSHIP =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_UPDATE')")
     @PutMapping("/{adminId}/{scholarshipId}")
     public ResponseEntity<ScholarshipDTO> update(
             @PathVariable Long adminId,
@@ -49,9 +59,13 @@ public class ScholarshipAdminController {
                 adminService.updateScholarship(adminId, scholarshipId, dto);
 
         log.info("Scholarship {} updated successfully", scholarshipId);
+
         return ResponseEntity.ok(response);
     }
 
+    // ================= DELETE SCHOLARSHIP =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_DELETE')")
     @DeleteMapping("/{adminId}/{scholarshipId}")
     public ResponseEntity<Void> delete(
             @PathVariable Long adminId,
@@ -62,20 +76,29 @@ public class ScholarshipAdminController {
         adminService.deleteScholarship(adminId, scholarshipId);
 
         log.info("Scholarship {} deleted successfully", scholarshipId);
+
         return ResponseEntity.noContent().build();
     }
 
+    // ================= GET SCHOLARSHIP =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_VIEW')")
     @GetMapping("/{scholarshipId}")
-    public ResponseEntity<ScholarshipDTO> getOne(@PathVariable Long scholarshipId) {
+    public ResponseEntity<ScholarshipDTO> getOne(
+            @PathVariable Long scholarshipId) {
 
         log.info("Fetching scholarship details for id {}", scholarshipId);
 
         ScholarshipDTO response = adminService.getScholarshipById(scholarshipId);
 
         log.info("Scholarship {} fetched successfully", scholarshipId);
+
         return ResponseEntity.ok(response);
     }
 
+    // ================= PAGED SCHOLARSHIPS =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_VIEW')")
     @GetMapping("/paged")
     public ResponseEntity<PagedResponse<ScholarshipDTO>> paged(
             @RequestParam(defaultValue = "0") int page,
@@ -92,6 +115,7 @@ public class ScholarshipAdminController {
                 adminService.getScholarshipsPaged(page, size, sortBy, sortDir, category);
 
         log.info("Fetched {} scholarships on page {}", response.getContent().size(), page);
+
         return ResponseEntity.ok(response);
     }
 }

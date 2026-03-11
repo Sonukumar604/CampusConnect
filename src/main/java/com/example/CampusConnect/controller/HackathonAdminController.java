@@ -3,13 +3,18 @@ package com.example.CampusConnect.controller;
 import com.example.CampusConnect.dto.CreateHackathonDTO;
 import com.example.CampusConnect.dto.HackathonDTO;
 import com.example.CampusConnect.service.HackathonAdminService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +22,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/hackathons")
-@PreAuthorize("hasRole('ADMIN')")
 public class HackathonAdminController {
 
     private static final Logger log =
@@ -26,11 +30,15 @@ public class HackathonAdminController {
     @Autowired
     private HackathonAdminService adminService;
 
+    // ================= CREATE HACKATHON =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_CREATE')")
     @PostMapping("/{adminId}")
     public ResponseEntity<HackathonDTO> createHackathon(
             @PathVariable Long adminId,
             @Valid @RequestBody CreateHackathonDTO dto
     ) {
+
         log.info("Admin request: create hackathon");
         log.debug("adminId={}", adminId);
 
@@ -40,11 +48,15 @@ public class HackathonAdminController {
         );
     }
 
+    // ================= UPDATE HACKATHON =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_UPDATE')")
     @PutMapping("/{hackathonId}")
     public ResponseEntity<HackathonDTO> updateHackathon(
             @PathVariable Long hackathonId,
             @Valid @RequestBody CreateHackathonDTO dto
     ) {
+
         log.info("Admin request: update hackathon");
         log.debug("hackathonId={}", hackathonId);
 
@@ -53,14 +65,26 @@ public class HackathonAdminController {
         );
     }
 
+    // ================= GET ALL HACKATHONS =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_UPDATE')")
     @GetMapping
     public ResponseEntity<List<HackathonDTO>> getAll() {
+
         log.info("Admin request: fetch all hackathons");
-        return ResponseEntity.ok(adminService.getAllHackathons());
+
+        return ResponseEntity.ok(
+                adminService.getAllHackathons()
+        );
     }
 
+    // ================= GET ONE HACKATHON =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_UPDATE')")
     @GetMapping("/{hackathonId}")
-    public ResponseEntity<HackathonDTO> getOne(@PathVariable Long hackathonId) {
+    public ResponseEntity<HackathonDTO> getOne(
+            @PathVariable Long hackathonId) {
+
         log.info("Admin request: fetch hackathon by id");
         log.debug("hackathonId={}", hackathonId);
 
@@ -69,8 +93,13 @@ public class HackathonAdminController {
         );
     }
 
+    // ================= TOGGLE STATUS =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_UPDATE')")
     @PutMapping("/{hackathonId}/toggle")
-    public ResponseEntity<String> toggleStatus(@PathVariable Long hackathonId) {
+    public ResponseEntity<String> toggleStatus(
+            @PathVariable Long hackathonId) {
+
         log.warn("Admin request: toggle hackathon status");
         log.debug("hackathonId={}", hackathonId);
 
@@ -79,8 +108,13 @@ public class HackathonAdminController {
         );
     }
 
+    // ================= DELETE HACKATHON =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_DELETE')")
     @DeleteMapping("/{hackathonId}")
-    public ResponseEntity<String> delete(@PathVariable Long hackathonId) {
+    public ResponseEntity<String> delete(
+            @PathVariable Long hackathonId) {
+
         log.warn("Admin request: delete hackathon");
         log.debug("hackathonId={}", hackathonId);
 
@@ -89,6 +123,9 @@ public class HackathonAdminController {
         );
     }
 
+    // ================= PAGED LIST =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_UPDATE')")
     @GetMapping("/paged")
     public ResponseEntity<Page<HackathonDTO>> getPaged(
             @RequestParam(defaultValue = "0") int page,
@@ -96,7 +133,9 @@ public class HackathonAdminController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String direction
     ) {
+
         log.info("Admin request: fetch paged hackathons");
+
         log.debug("page={}, size={}, sortBy={}, direction={}",
                 page, size, sortBy, direction);
 

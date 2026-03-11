@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin/courses")
-@PreAuthorize("hasRole('ADMIN')")
 public class CourseAdminController {
 
     private static final Logger log =
@@ -29,17 +28,28 @@ public class CourseAdminController {
     @Autowired
     private ModelMapper modelMapper;
 
+    // ================= CREATE COURSE =================
+
+    @PreAuthorize("hasAuthority('COURSE_CREATE')")
     @PostMapping
-    public ResponseEntity<CourseResponseDTO> addCourse(@Valid @RequestBody CourseRequestDTO requestDTO) {
+    public ResponseEntity<CourseResponseDTO> addCourse(
+            @Valid @RequestBody CourseRequestDTO requestDTO) {
+
         log.info("Admin request: create course");
 
         Course course = modelMapper.map(requestDTO, Course.class);
         Course saved = adminService.addCourse(course);
 
         log.info("Course created successfully with id {}", saved.getId());
-        return ResponseEntity.ok(modelMapper.map(saved, CourseResponseDTO.class));
+
+        return ResponseEntity.ok(
+                modelMapper.map(saved, CourseResponseDTO.class)
+        );
     }
 
+    // ================= UPDATE COURSE =================
+
+    @PreAuthorize("hasAuthority('COURSE_UPDATE')")
     @PutMapping("/{id}")
     public ResponseEntity<CourseResponseDTO> updateCourse(
             @PathVariable Long id,
@@ -56,15 +66,28 @@ public class CourseAdminController {
         }
 
         log.info("Course updated successfully, id={}", id);
-        return ResponseEntity.ok(modelMapper.map(updated, CourseResponseDTO.class));
+
+        return ResponseEntity.ok(
+                modelMapper.map(updated, CourseResponseDTO.class)
+        );
     }
 
+    // ================= DELETE COURSE =================
+
+    @PreAuthorize("hasAuthority('COURSE_DELETE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteCourse(@PathVariable Long id) {
+
         log.warn("Admin request: delete course {}", id);
-        return ResponseEntity.ok(adminService.deleteCourse(id));
+
+        return ResponseEntity.ok(
+                adminService.deleteCourse(id)
+        );
     }
 
+    // ================= LIST COURSES =================
+
+    @PreAuthorize("hasAuthority('COURSE_UPDATE')")
     @GetMapping
     public ResponseEntity<Page<CourseResponseDTO>> getPagedCourses(
             @RequestParam(defaultValue = "0") int page,
@@ -73,25 +96,36 @@ public class CourseAdminController {
             @RequestParam(defaultValue = "asc") String sortDir) {
 
         log.info("Admin request: get paged courses");
-        log.debug("page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
+        log.debug("page={}, size={}, sortBy={}, sortDir={}",
+                page, size, sortBy, sortDir);
 
         Page<Course> coursePage =
                 adminService.getAllCoursesPaged(page, size, sortBy, sortDir);
 
-        return ResponseEntity.ok(coursePage.map(c ->
-                modelMapper.map(c, CourseResponseDTO.class)));
+        return ResponseEntity.ok(
+                coursePage.map(c ->
+                        modelMapper.map(c, CourseResponseDTO.class)
+                )
+        );
     }
 
+    // ================= GET COURSE =================
+
+    @PreAuthorize("hasAuthority('COURSE_UPDATE')")
     @GetMapping("/{id}")
     public ResponseEntity<CourseResponseDTO> getCourseById(@PathVariable Long id) {
+
         log.info("Admin request: get course {}", id);
 
         Course course = adminService.getCourseById(id);
+
         if (course == null) {
             log.warn("Course not found, id={}", id);
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(modelMapper.map(course, CourseResponseDTO.class));
+        return ResponseEntity.ok(
+                modelMapper.map(course, CourseResponseDTO.class)
+        );
     }
 }

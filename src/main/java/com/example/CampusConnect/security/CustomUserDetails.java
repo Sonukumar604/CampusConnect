@@ -2,12 +2,15 @@ package com.example.CampusConnect.security;
 
 import com.example.CampusConnect.model.Role;
 import com.example.CampusConnect.model.User;
+import com.example.CampusConnect.security.permission.Permission;
+import com.example.CampusConnect.security.permission.RolePermissionUtil;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class CustomUserDetails implements UserDetails {
 
@@ -17,12 +20,30 @@ public class CustomUserDetails implements UserDetails {
         this.user = user;
     }
 
-    // ROLE → GrantedAuthority
+    // ROLE + PERMISSIONS → GrantedAuthority
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(
+
+        Set<GrantedAuthority> authorities = new HashSet<>();
+
+        // ROLE authority (required for hasRole())
+        authorities.add(
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );
+
+        // Permission authorities (for granular access)
+        Set<Permission> permissions =
+                RolePermissionUtil.getPermissions(user.getRole());
+
+        if (permissions != null) {
+            permissions.forEach(permission ->
+                    authorities.add(
+                            new SimpleGrantedAuthority(permission.name())
+                    )
+            );
+        }
+
+        return authorities;
     }
 
     @Override
@@ -30,13 +51,14 @@ public class CustomUserDetails implements UserDetails {
         return user.getPassword();
     }
 
-    // We use EMAIL as username
+    // EMAIL used as username
     @Override
     public String getUsername() {
         return user.getEmail();
     }
 
-    // Account lifecycle flags
+    // ===== Account lifecycle =====
+
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -73,5 +95,9 @@ public class CustomUserDetails implements UserDetails {
 
     public User getUser() {
         return user;
+    }
+
+    public Integer getTokenVersion() {
+        return user.getTokenVersion();
     }
 }

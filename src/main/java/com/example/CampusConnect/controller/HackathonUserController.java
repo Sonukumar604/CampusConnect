@@ -2,12 +2,16 @@ package com.example.CampusConnect.controller;
 
 import com.example.CampusConnect.dto.HackathonDTO;
 import com.example.CampusConnect.service.HackathonUserService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +20,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/hackathons")
-@PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
 public class HackathonUserController {
 
     private static final Logger log =
@@ -25,8 +28,12 @@ public class HackathonUserController {
     @Autowired
     private HackathonUserService userService;
 
+    // ================= ALL HACKATHONS =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_REGISTER')")
     @GetMapping
     public ResponseEntity<List<HackathonDTO>> getAll() {
+
         log.info("User request: fetch all hackathons");
 
         return ResponseEntity.ok(
@@ -34,6 +41,9 @@ public class HackathonUserController {
         );
     }
 
+    // ================= FILTER HACKATHONS =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_REGISTER')")
     @GetMapping("/filter")
     public ResponseEntity<List<HackathonDTO>> filter(
             @RequestParam(required = false) String technology,
@@ -41,7 +51,9 @@ public class HackathonUserController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate
     ) {
+
         log.info("User request: filter hackathons");
+
         log.debug("technology={}, organization={}, startDate={}",
                 technology, organization, startDate);
 
@@ -50,8 +62,12 @@ public class HackathonUserController {
         );
     }
 
+    // ================= HACKATHON DETAILS =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_REGISTER')")
     @GetMapping("/{hackathonId}")
     public ResponseEntity<HackathonDTO> details(@PathVariable Long hackathonId) {
+
         log.info("User request: fetch hackathon details");
         log.debug("hackathonId={}", hackathonId);
 
@@ -60,6 +76,9 @@ public class HackathonUserController {
         );
     }
 
+    // ================= PAGED LIST =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_REGISTER')")
     @GetMapping("/paged")
     public ResponseEntity<Page<HackathonDTO>> getPaged(
             @RequestParam(defaultValue = "0") int page,
@@ -67,7 +86,9 @@ public class HackathonUserController {
             @RequestParam(defaultValue = "startDate") String sortBy,
             @RequestParam(defaultValue = "asc") String direction
     ) {
+
         log.info("User request: fetch paged hackathons");
+
         log.debug("page={}, size={}, sortBy={}, direction={}",
                 page, size, sortBy, direction);
 
@@ -76,6 +97,9 @@ public class HackathonUserController {
         );
     }
 
+    // ================= FILTER PAGED =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_REGISTER')")
     @GetMapping("/filter/paged")
     public ResponseEntity<Page<HackathonDTO>> filterPaged(
             @RequestParam(required = false) String technology,
@@ -87,7 +111,9 @@ public class HackathonUserController {
             @RequestParam(defaultValue = "startDate") String sortBy,
             @RequestParam(defaultValue = "asc") String direction
     ) {
+
         log.info("User request: filter paged hackathons");
+
         log.debug(
                 "technology={}, organization={}, startDate={}, page={}, size={}, sortBy={}, direction={}",
                 technology, organization, startDate, page, size, sortBy, direction

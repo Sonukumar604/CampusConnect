@@ -3,16 +3,19 @@ package com.example.CampusConnect.controller;
 import com.example.CampusConnect.dto.CreateInternshipDTO;
 import com.example.CampusConnect.dto.InternshipDTO;
 import com.example.CampusConnect.service.InternshipAdminService;
+
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin/internships")
-@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class InternshipAdminController {
 
@@ -21,15 +24,20 @@ public class InternshipAdminController {
 
     private final InternshipAdminService internshipAdminService;
 
-    // ✅ Create a new internship
+    // ================= CREATE INTERNSHIP =================
+
+    @PreAuthorize("hasAuthority('INTERNSHIP_CREATE')")
     @PostMapping
     public InternshipDTO createInternship(@Valid @RequestBody CreateInternshipDTO dto) {
+
         log.info("Admin request: create internship");
 
         return internshipAdminService.createInternship(dto);
     }
 
-    // ✅ Update an existing internship
+    // ================= UPDATE INTERNSHIP =================
+
+    @PreAuthorize("hasAuthority('INTERNSHIP_UPDATE')")
     @PutMapping("/{id}")
     public InternshipDTO updateInternship(
             @PathVariable Long id,
@@ -41,13 +49,17 @@ public class InternshipAdminController {
         return internshipAdminService.updateInternship(id, dto);
     }
 
-    // ✅ Delete an internship
+    // ================= DELETE INTERNSHIP =================
+
+    @PreAuthorize("hasAuthority('INTERNSHIP_DELETE')")
     @DeleteMapping("/{id}")
     public String deleteInternship(@PathVariable Long id) {
+
         log.warn("Admin request: delete internship");
         log.debug("internshipId={}", id);
 
         internshipAdminService.deleteInternship(id);
+
         return "Internship with ID " + id + " has been deleted successfully.";
     }
 }

@@ -46,13 +46,12 @@ public class SecurityConfig {
                         exception.authenticationEntryPoint(jwtEntryPoint)
                 )
 
-                //  VERY IMPORTANT
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
 
                 .authorizeHttpRequests(auth -> auth
 
-
+                        // ===== PUBLIC ENDPOINTS =====
                         .requestMatchers(
                                 "/",
                                 "/error",
@@ -63,16 +62,33 @@ public class SecurityConfig {
                                 "/api/public/**"
                         ).permitAll()
 
+                        // ===== ADMIN APIs =====
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
 
-
+                        // ===== ORGANIZER APIs =====
                         .requestMatchers("/api/organizer/**")
                         .hasAnyRole("ORGANIZER", "ADMIN")
 
-
+                        // ===== STUDENT APIs =====
                         .requestMatchers("/api/student/**")
                         .hasAnyRole("STUDENT", "ADMIN")
+
+                        // ===== PERMISSION LEVEL EXAMPLES =====
+                        .requestMatchers("/api/hackathons/create")
+                        .hasAuthority("HACKATHON_CREATE")
+
+                        .requestMatchers("/api/hackathons/register")
+                        .hasAuthority("HACKATHON_REGISTER")
+
+                        .requestMatchers("/api/internships/apply")
+                        .hasAuthority("INTERNSHIP_APPLY")
+
+                        .requestMatchers("/api/courses/enroll")
+                        .hasAuthority("COURSE_ENROLL")
+
+                        .requestMatchers("/api/admin/users")
+                        .hasAuthority("USER_MANAGE")
 
                         .anyRequest().authenticated()
                 )
@@ -96,9 +112,11 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
+
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(customUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
+
         return provider;
     }
 
@@ -111,6 +129,7 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration
     ) throws Exception {
+
         return configuration.getAuthenticationManager();
     }
 }

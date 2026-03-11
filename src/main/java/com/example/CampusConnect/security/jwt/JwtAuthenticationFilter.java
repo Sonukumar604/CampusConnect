@@ -1,5 +1,6 @@
 package com.example.CampusConnect.security.jwt;
 
+import com.example.CampusConnect.security.CustomUserDetails;
 import com.example.CampusConnect.security.CustomUserDetailsService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -70,7 +71,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserDetails userDetails =
                     userDetailsService.loadUserByUsername(username);
 
+            // Validate token normally
             if (!jwtService.isAccessTokenValid(token, userDetails)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // 🔐 Token Version Validation
+            Integer tokenVersion = jwtService.extractTokenVersion(token);
+
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+
+            if (!tokenVersion.equals(customUserDetails.getTokenVersion())) {
                 filterChain.doFilter(request, response);
                 return;
             }

@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin/users")
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
 
     private static final Logger log =
@@ -23,6 +22,9 @@ public class AdminUserController {
     @Autowired
     private AdminUserService adminUserService;
 
+    // ================= VIEW USERS =================
+
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     @GetMapping("/paged")
     public ResponseEntity<Page<UserDTO>> getAllUsersPaged(
             @RequestParam(defaultValue = "0") int page,
@@ -39,18 +41,23 @@ public class AdminUserController {
         return ResponseEntity.ok(users);
     }
 
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         log.info("Admin request: get all users");
         return ResponseEntity.ok(adminUserService.getAllUsers());
     }
 
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     @GetMapping("/{userId}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long userId) {
         log.info("Admin request: get user by id {}", userId);
         return ResponseEntity.ok(adminUserService.getUserById(userId));
     }
 
+    // ================= MANAGE USERS =================
+
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     @PutMapping("/{userId}/role")
     public ResponseEntity<UserDTO> updateUserRole(
             @PathVariable Long userId,
@@ -62,18 +69,21 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.updateUserRole(userId, role));
     }
 
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     @PutMapping("/{id}/block")
     public ResponseEntity<UserDTO> blockUser(@PathVariable Long id) {
         log.warn("Admin request: block user {}", id);
         return ResponseEntity.ok(adminUserService.blockUser(id));
     }
 
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     @PutMapping("/{id}/unblock")
     public ResponseEntity<UserDTO> unblockUser(@PathVariable Long id) {
         log.info("Admin request: unblock user {}", id);
         return ResponseEntity.ok(adminUserService.unblockUser(id));
     }
 
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     @DeleteMapping("/{userId}")
     public ResponseEntity<String> deleteUser(@PathVariable Long userId) {
         log.warn("Admin request: delete user {}", userId);

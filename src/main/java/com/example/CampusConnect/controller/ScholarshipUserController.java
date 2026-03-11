@@ -3,12 +3,16 @@ package com.example.CampusConnect.controller;
 import com.example.CampusConnect.dto.*;
 import com.example.CampusConnect.service.ScholarshipUserService;
 import com.example.CampusConnect.util.PagedResponse;
+
 import jakarta.validation.constraints.Min;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +20,6 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/scholarships")
-@PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
 @RequiredArgsConstructor
 public class ScholarshipUserController {
 
@@ -25,6 +28,9 @@ public class ScholarshipUserController {
 
     private final ScholarshipUserService userService;
 
+    // ================= PUBLISHED SCHOLARSHIPS =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_VIEW')")
     @GetMapping("/published")
     public ResponseEntity<PagedResponse<ScholarshipDTO>> published(
             @RequestParam(defaultValue = "0") int page,
@@ -32,6 +38,7 @@ public class ScholarshipUserController {
             @RequestParam(defaultValue = "deadline") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir
     ) {
+
         log.info("User request: fetch published scholarships");
         log.debug("page={}, size={}, sortBy={}, sortDir={}", page, size, sortBy, sortDir);
 
@@ -40,6 +47,9 @@ public class ScholarshipUserController {
         );
     }
 
+    // ================= FILTER SCHOLARSHIPS =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_VIEW')")
     @GetMapping("/filter")
     public ResponseEntity<PagedResponse<ScholarshipDTO>> filter(
             @RequestParam(defaultValue = "0") int page,
@@ -56,10 +66,13 @@ public class ScholarshipUserController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deadlineAfter,
             @RequestParam(required = false) String eligibilityContains
     ) {
+
         log.info("User request: filter scholarships");
+
         log.debug(
                 "category={}, provider={}, minAmount={}, maxAmount={}, deadlineBefore={}, deadlineAfter={}, eligibilityContains={}",
-                category, provider, minAmount, maxAmount, deadlineBefore, deadlineAfter, eligibilityContains
+                category, provider, minAmount, maxAmount,
+                deadlineBefore, deadlineAfter, eligibilityContains
         );
 
         return ResponseEntity.ok(
@@ -71,8 +84,12 @@ public class ScholarshipUserController {
         );
     }
 
+    // ================= SCHOLARSHIP DETAILS =================
+
+    @PreAuthorize("hasAuthority('SCHOLARSHIP_VIEW')")
     @GetMapping("/{id}")
     public ResponseEntity<ScholarshipDTO> getOne(@PathVariable Long id) {
+
         log.info("User request: fetch scholarship details");
         log.debug("scholarshipId={}", id);
 

@@ -3,12 +3,16 @@ package com.example.CampusConnect.controller;
 import com.example.CampusConnect.dto.EventDTO;
 import com.example.CampusConnect.service.EventUserService;
 import com.example.CampusConnect.util.PagedResponse;
+
 import jakarta.validation.constraints.Min;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +21,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/user/events")
-@PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
 @RequiredArgsConstructor
 public class EventUserController {
 
@@ -26,6 +29,9 @@ public class EventUserController {
 
     private final EventUserService userService;
 
+    // ================= PUBLISHED EVENTS =================
+
+    @PreAuthorize("hasAuthority('EVENT_REGISTER')")
     @GetMapping("/published")
     public ResponseEntity<PagedResponse<EventDTO>> published(
             @RequestParam(defaultValue = "0") int page,
@@ -41,6 +47,9 @@ public class EventUserController {
         );
     }
 
+    // ================= UPCOMING EVENTS =================
+
+    @PreAuthorize("hasAuthority('EVENT_REGISTER')")
     @GetMapping("/upcoming")
     public ResponseEntity<List<EventDTO>> upcoming(
             @RequestParam(defaultValue = "5") @Min(1) int limit) {
@@ -53,6 +62,9 @@ public class EventUserController {
         );
     }
 
+    // ================= FILTER EVENTS =================
+
+    @PreAuthorize("hasAuthority('EVENT_REGISTER')")
     @GetMapping("/filter")
     public ResponseEntity<PagedResponse<EventDTO>> filter(
             @RequestParam(defaultValue = "0") int page,
@@ -68,6 +80,7 @@ public class EventUserController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
 
         log.info("User request: filter events");
+
         log.debug(
                 "page={}, size={}, sortBy={}, sortDir={}, type={}, mode={}, location={}, from={}, to={}",
                 page, size, sortBy, sortDir, type, mode, location, from, to
@@ -80,8 +93,12 @@ public class EventUserController {
         );
     }
 
+    // ================= EVENT DETAILS =================
+
+    @PreAuthorize("hasAuthority('EVENT_REGISTER')")
     @GetMapping("/{id}")
     public ResponseEntity<EventDTO> getOne(@PathVariable Long id) {
+
         log.info("User request: fetch event details");
         log.debug("eventId={}", id);
 

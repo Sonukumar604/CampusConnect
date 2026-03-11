@@ -1,5 +1,6 @@
 package com.example.CampusConnect.security.jwt;
 
+import com.example.CampusConnect.security.CustomUserDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -55,15 +56,18 @@ public class JwtService {
                               long expiration,
                               String tokenType) {
 
-        List<String> roles = userDetails.getAuthorities()
+        CustomUserDetails customUser = (CustomUserDetails) userDetails;
+
+        List<String> authorities = userDetails.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
-                .claim("roles", roles)
+                .claim("authorities", authorities)
                 .claim("tokenType", tokenType)
+                .claim("tokenVersion", customUser.getTokenVersion())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSecretKey(), SignatureAlgorithm.HS256)
@@ -128,5 +132,9 @@ public class JwtService {
     }
     public long getRefreshExpiration() {
         return refreshExpiration;
+    }
+
+    public Integer extractTokenVersion(String token) {
+        return extractAllClaims(token).get("tokenVersion", Integer.class);
     }
 }

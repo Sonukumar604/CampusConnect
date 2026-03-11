@@ -2,10 +2,12 @@ package com.example.CampusConnect.controller;
 
 import com.example.CampusConnect.dto.*;
 import com.example.CampusConnect.service.UserService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +15,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
 public class UserController {
 
     private static final Logger log =
@@ -22,7 +23,9 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // ✅ Get current authenticated user
+    // ================= CURRENT USER =================
+
+    @PreAuthorize("hasAuthority('USER_PROFILE_VIEW')")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserDTO>> getCurrentUser(
             org.springframework.security.core.Authentication authentication) {
@@ -38,9 +41,9 @@ public class UserController {
         );
     }
 
+    // ================= REGISTER USER =================
 
-
-    // ✅ Register
+    // Public endpoint – no authorization required
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserDTO>> registerUser(
             @RequestBody CreateUserDTO createUserDTO) {
@@ -55,10 +58,12 @@ public class UserController {
         );
     }
 
+    // ================= ALL USERS =================
 
-    // ✅ Get all users
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<UserDTO>>> getAllUsers() {
+
         log.info("Request: fetch all users");
 
         List<UserDTO> users = userService.getAllUsers();
@@ -70,9 +75,12 @@ public class UserController {
         );
     }
 
-    // ✅ Get user by ID
+    // ================= GET USER BY ID =================
+
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDTO>> getUserById(@PathVariable Long id) {
+
         log.info("Request: fetch user by id");
         log.debug("userId={}", id);
 
@@ -83,7 +91,9 @@ public class UserController {
         );
     }
 
-    // ✅ Update user
+    // ================= UPDATE USER =================
+
+    @PreAuthorize("hasAuthority('USER_UPDATE')")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDTO>> updateUser(
             @PathVariable Long id,
@@ -99,9 +109,12 @@ public class UserController {
         );
     }
 
-    // ✅ Delete user
+    // ================= DELETE USER =================
+
+    @PreAuthorize("hasAuthority('USER_DELETE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable Long id) {
+
         log.warn("Request: delete user");
         log.debug("userId={}", id);
 

@@ -81,4 +81,9 @@ public class User extends BaseAuditableEntity {
 
     @Column(name = "image_url")
     private String imageUrl;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer tokenVersion = 0;
+
 }

@@ -3,36 +3,54 @@ package com.example.CampusConnect.controller;
 import com.example.CampusConnect.dto.HackathonRegistrationDTO;
 import com.example.CampusConnect.dto.RegistrationHackathonRequest;
 import com.example.CampusConnect.service.HackathonRegistrationService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/hackathons/registrations")
-@PreAuthorize("hasAnyRole('STUDENT','ADMIN')")
 public class HackathonRegistrationController {
 
     @Autowired
     @Qualifier("hackathonRegistrationServiceImpl")
     private HackathonRegistrationService registrationService;
 
+    // ================= REGISTER FOR HACKATHON =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_REGISTER')")
     @PostMapping("/{hackathonId}/user/{userId}")
     public ResponseEntity<HackathonRegistrationDTO> register(
             @PathVariable Long hackathonId,
             @PathVariable Long userId,
             @Valid @RequestBody RegistrationHackathonRequest request
     ) {
-        return new ResponseEntity<>(registrationService.registerUser(userId, hackathonId, request), HttpStatus.CREATED);
+
+        return new ResponseEntity<>(
+                registrationService.registerUser(userId, hackathonId, request),
+                HttpStatus.CREATED
+        );
     }
 
+    // ================= USER REGISTRATIONS =================
+
+    @PreAuthorize("hasAuthority('HACKATHON_REGISTER')")
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<HackathonRegistrationDTO>> list(@PathVariable Long userId) {
-        return ResponseEntity.ok(registrationService.getRegistrationsByUser(userId));
+    public ResponseEntity<List<HackathonRegistrationDTO>> list(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok(
+                registrationService.getRegistrationsByUser(userId)
+        );
     }
 }
