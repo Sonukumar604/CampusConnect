@@ -102,6 +102,9 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         user.setRole(newRole);
 
+        // 🔐 invalidate all active JWT tokens
+        user.setTokenVersion(user.getTokenVersion() + 1);
+
         User saved = userRepository.save(user);
 
         log.info("Role updated successfully for user ID {}", userId);
@@ -129,6 +132,9 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         user.setStatus(User.Status.BLOCKED);
 
+        // 🔐 invalidate all JWT tokens immediately
+        user.setTokenVersion(user.getTokenVersion() + 1);
+
         User saved = userRepository.save(user);
 
         log.info("User blocked successfully. ID {}", userId);
@@ -152,6 +158,9 @@ public class AdminUserServiceImpl implements AdminUserService {
                 });
 
         user.setStatus(User.Status.ACTIVE);
+
+        // 🔐 reset tokens to force fresh login
+        user.setTokenVersion(user.getTokenVersion() + 1);
 
         User saved = userRepository.save(user);
 

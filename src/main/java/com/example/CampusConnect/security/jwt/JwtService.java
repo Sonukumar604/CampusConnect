@@ -100,11 +100,16 @@ public class JwtService {
                                  UserDetails userDetails,
                                  String expectedType) {
         try {
+
             final String username = extractUsername(token);
             final String tokenType = extractTokenType(token);
+            final Integer tokenVersion = extractTokenVersion(token);
+
+            CustomUserDetails customUser = (CustomUserDetails) userDetails;
 
             return username.equals(userDetails.getUsername())
                     && tokenType.equals(expectedType)
+                    && tokenVersion.equals(customUser.getTokenVersion())
                     && !isTokenExpired(token);
 
         } catch (JwtException | IllegalArgumentException e) {

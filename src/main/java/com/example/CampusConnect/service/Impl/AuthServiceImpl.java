@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -116,30 +117,35 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void logout(HttpServletRequest request,
                        HttpServletResponse response) {
 
         String refreshToken = extractRefreshToken(request);
 
         if (refreshToken != null) {
+
             sessionService.findActiveSessionByRefreshToken(refreshToken)
                     .ifPresent(session -> {
 
                         User user = session.getUser();
 
-                        // deactivate session
+                        // deactivate device session
                         sessionService.deactivateSession(
                                 user,
                                 session.getDeviceId()
                         );
 
-                        // Token version increment (invalidate old JWTs)
+                        // invalidate existing JWT tokens
                         user.setTokenVersion(user.getTokenVersion() + 1);
+
                         userRepository.save(user);
                     });
         }
 
-        clearAuthCookies(response);
+        // clear cookies
+        jwtCookieUtil.clearAccessTokenCookie(response);
+        jwtCookieUtil.clearRefreshTokenCookie(response);
     }
 
     private CustomUserDetails loadAndValidateUser(String email, String password) {
