@@ -86,4 +86,7 @@ public class User extends BaseAuditableEntity {
     @Builder.Default
     private Integer tokenVersion = 0;
 
+    private boolean emailVerified = false;
+    private boolean enabled = false;
+
 }

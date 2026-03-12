@@ -20,4 +20,5 @@ public interface AuthService {
 
     void logout(HttpServletRequest request,
                 HttpServletResponse response);
+    void verifyEmail(String token);
 }

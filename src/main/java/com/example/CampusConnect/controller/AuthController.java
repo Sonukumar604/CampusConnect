@@ -5,6 +5,7 @@ import com.example.CampusConnect.dto.LoginResponseDTO;
 import com.example.CampusConnect.dto.SignupRequestDTO;
 import com.example.CampusConnect.service.AuthService;
 
+import com.example.CampusConnect.service.PasswordResetService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ public class AuthController {
             LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
 
     // ================= SIGNUP =================
 
@@ -97,5 +99,28 @@ public class AuthController {
         log.info("User logged out successfully");
 
         return ResponseEntity.ok("Logged out successfully");
+    }
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+
+        authService.verifyEmail(token);
+
+        return ResponseEntity.ok("Email verified successfully");
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestParam String email) {
+
+        passwordResetService.createResetToken(email);
+
+        return ResponseEntity.ok("Password reset link sent");
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @RequestParam String token,
+            @RequestParam String newPassword) {
+
+        passwordResetService.resetPassword(token, newPassword);
+
+        return ResponseEntity.ok("Password reset successful");
     }
 }

@@ -13,6 +13,7 @@ import com.example.CampusConnect.security.CustomUserDetailsService;
 import com.example.CampusConnect.security.jwt.JwtCookieUtil;
 import com.example.CampusConnect.security.jwt.JwtService;
 import com.example.CampusConnect.service.AuthService;
+import com.example.CampusConnect.service.EmailVerificationService;
 import com.example.CampusConnect.service.SessionService;
 
 import jakarta.servlet.http.Cookie;
@@ -39,6 +40,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService customUserDetailsService;
     private final SessionService sessionService;
+    private final EmailVerificationService emailVerificationService;
+
 
     @Override
     public void signup(SignupRequestDTO dto) {
@@ -53,9 +56,13 @@ public class AuthServiceImpl implements AuthService {
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .role(Role.STUDENT)
                 .status(User.Status.ACTIVE)
+                .emailVerified(false)
+                .enabled(false)
                 .build();
 
         userRepository.save(user);
+
+        emailVerificationService.createVerificationToken(user);
     }
 
     @Override
@@ -170,6 +177,9 @@ public class AuthServiceImpl implements AuthService {
         if (user.getStatus() == User.Status.BLOCKED) {
             throw new IllegalStateException("User account is blocked");
         }
+        if (!user.isEmailVerified()) {
+            throw new IllegalStateException("Please verify your email first");
+        }
     }
 
     private void setAuthCookies(HttpServletResponse response,
@@ -215,5 +225,11 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .build();
+    }
+    @Override
+    public void verifyEmail(String token) {
+
+        emailVerificationService.verifyEmail(token);
+
     }
 }
