@@ -6,11 +6,14 @@ import com.example.CampusConnect.dto.UpdateEventDTO;
 import com.example.CampusConnect.exceptions.ResourceNotFoundException;
 import com.example.CampusConnect.model.Event;
 import com.example.CampusConnect.model.EventType;
+import com.example.CampusConnect.model.NotificationType;
 import com.example.CampusConnect.model.PublishStatus;
+import com.example.CampusConnect.model.Role;
 import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.EventRepository;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.EventAdminService;
+import com.example.CampusConnect.service.NotificationService;
 import com.example.CampusConnect.util.PagedResponse;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -21,11 +24,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN ONLY
+@PreAuthorize("hasRole('ADMIN')")
 public class EventAdminServiceImpl implements EventAdminService {
 
     private static final Logger log =
@@ -34,6 +38,7 @@ public class EventAdminServiceImpl implements EventAdminService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final ModelMapper mapper;
+    private final NotificationService notificationService;
 
     // =========================
     // CREATE
@@ -56,6 +61,18 @@ public class EventAdminServiceImpl implements EventAdminService {
         Event saved = eventRepository.save(event);
 
         log.info("Event created successfully with id={}", saved.getId());
+
+        // 🔔 Notify all students
+        List<User> students = userRepository.findByRole(Role.STUDENT);
+
+        for (User student : students) {
+            notificationService.createNotification(
+                    student,
+                    "New Event Announced",
+                    saved.getTitle() + " event has been scheduled",
+                    NotificationType.EVENT
+            );
+        }
 
         return toDto(saved);
     }

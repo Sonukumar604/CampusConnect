@@ -4,10 +4,13 @@ import com.example.CampusConnect.dto.CreateHackathonDTO;
 import com.example.CampusConnect.dto.HackathonDTO;
 import com.example.CampusConnect.exceptions.ResourceNotFoundException;
 import com.example.CampusConnect.model.Hackathon;
+import com.example.CampusConnect.model.NotificationType;
+import com.example.CampusConnect.model.Role;
 import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.HackathonRepository;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.HackathonAdminService;
+import com.example.CampusConnect.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -25,7 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN-ONLY SERVICE
+@PreAuthorize("hasRole('ADMIN')")
 public class HackathonAdminServiceImpl implements HackathonAdminService {
 
     private static final Logger log =
@@ -34,6 +37,7 @@ public class HackathonAdminServiceImpl implements HackathonAdminService {
     private final HackathonRepository hackathonRepository;
     private final UserRepository userRepository;
     private final ModelMapper mapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -56,6 +60,18 @@ public class HackathonAdminServiceImpl implements HackathonAdminService {
         Hackathon saved = hackathonRepository.save(h);
 
         log.info("Hackathon created successfully with id={}", saved.getId());
+        List<User> students = userRepository.findByRole(Role.STUDENT);
+
+        for (User student : students) {
+
+            notificationService.createNotification(
+                    student,
+                    "New Hackathon Available",
+                    saved.getTitle() + " is now open for registration",
+                    NotificationType.HACKATHON
+            );
+
+        }
 
         return mapper.map(saved, HackathonDTO.class);
     }

@@ -2,8 +2,13 @@ package com.example.CampusConnect.service.Impl;
 
 import com.example.CampusConnect.exceptions.ResourceNotFoundException;
 import com.example.CampusConnect.model.Course;
+import com.example.CampusConnect.model.NotificationType;
+import com.example.CampusConnect.model.Role;
+import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.CourseRepository;
+import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.CourseAdminService;
+import com.example.CampusConnect.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,15 +17,19 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN ONLY
+@PreAuthorize("hasRole('ADMIN')")
 public class CourseAdminServiceImpl implements CourseAdminService {
 
     private static final Logger log =
             LoggerFactory.getLogger(CourseAdminServiceImpl.class);
 
     private final CourseRepository courseRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     // =========================
     // CREATE
@@ -39,6 +48,18 @@ public class CourseAdminServiceImpl implements CourseAdminService {
         Course saved = courseRepository.save(course);
 
         log.info("Course created successfully with ID {}", saved.getId());
+
+        // 🔔 Notify all students
+        List<User> students = userRepository.findByRole(Role.STUDENT);
+
+        for (User student : students) {
+            notificationService.createNotification(
+                    student,
+                    "New Course Available",
+                    saved.getTitle() + " course has been published",
+                    NotificationType.COURSE
+            );
+        }
 
         return saved;
     }
@@ -70,7 +91,6 @@ public class CourseAdminServiceImpl implements CourseAdminService {
         existing.setDescription(updatedCourse.getDescription());
         existing.setCourseType(updatedCourse.getCourseType());
 
-        // If free → force price 0
         if (updatedCourse.isFree()) {
             existing.setPrice(0.0);
         } else {

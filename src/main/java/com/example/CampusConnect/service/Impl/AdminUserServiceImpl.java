@@ -6,6 +6,7 @@ import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.model.Role;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.AdminUserService;
+import com.example.CampusConnect.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN ONLY
+@PreAuthorize("hasRole('ADMIN')")   // ADMIN ONLY
 public class AdminUserServiceImpl implements AdminUserService {
 
     private static final Logger log =
@@ -29,6 +30,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final NotificationService notificationService;
 
     // =========================
     // GET ALL

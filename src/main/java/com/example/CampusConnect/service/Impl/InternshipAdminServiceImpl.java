@@ -4,9 +4,16 @@ import com.example.CampusConnect.dto.CreateInternshipDTO;
 import com.example.CampusConnect.dto.InternshipDTO;
 import com.example.CampusConnect.exceptions.ResourceNotFoundException;
 import com.example.CampusConnect.model.Internship;
+import com.example.CampusConnect.model.NotificationType;
+import com.example.CampusConnect.model.Role;
+import com.example.CampusConnect.model.User;
 import com.example.CampusConnect.repository.InternshipRepository;
+import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.InternshipAdminService;
+import com.example.CampusConnect.service.NotificationService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -15,16 +22,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")   // 🔐 ADMIN ONLY
+@PreAuthorize("hasRole('ADMIN')")
 public class InternshipAdminServiceImpl implements InternshipAdminService {
 
     private static final Logger log =
             LoggerFactory.getLogger(InternshipAdminServiceImpl.class);
 
     private final InternshipRepository internshipRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     // =========================
     // CREATE
@@ -44,6 +54,20 @@ public class InternshipAdminServiceImpl implements InternshipAdminService {
 
         log.info("Internship created successfully with id={}", saved.getId());
 
+        // Notify all students
+        List<User> students = userRepository.findByRole(Role.STUDENT);
+
+        for (User student : students) {
+
+            notificationService.createNotification(
+                    student,
+                    "New Internship Posted",
+                    saved.getRole() + " internship at " + saved.getCompanyName(),
+                    NotificationType.INTERNSHIP
+            );
+
+        }
+
         return mapToDto(saved);
     }
 
@@ -62,7 +86,6 @@ public class InternshipAdminServiceImpl implements InternshipAdminService {
                     return new ResourceNotFoundException("Internship not found");
                 });
 
-        // Prevent overwriting id and posted date
         BeanUtils.copyProperties(dto, internship, "id", "postedOn");
 
         Internship updated = internshipRepository.save(internship);
