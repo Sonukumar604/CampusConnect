@@ -4,9 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -18,6 +21,9 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public abstract class BaseAuditableEntity {
 
     @CreatedDate
@@ -28,7 +34,6 @@ public abstract class BaseAuditableEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // ✅ KEEP AS STRING (IMPORTANT)
     @CreatedBy
     @Column(name = "created_by", nullable = false, updatable = false)
     private String createdBy;
@@ -36,4 +41,6 @@ public abstract class BaseAuditableEntity {
     @LastModifiedBy
     @Column(name = "updated_by")
     private String updatedBy;
+
+
 }

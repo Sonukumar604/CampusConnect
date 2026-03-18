@@ -3,6 +3,7 @@ package com.example.CampusConnect.model;
 import com.example.CampusConnect.security.oauth.model.AuthProvider;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
@@ -15,7 +16,7 @@ import java.util.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class User extends BaseAuditableEntity {
 
     @Id

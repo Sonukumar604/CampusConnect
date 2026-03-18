@@ -3,6 +3,7 @@ package com.example.CampusConnect.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
@@ -15,9 +16,10 @@ import java.util.List;
 @Audited // ✅ Enable Hibernate Envers
 @Getter
 @Setter
-@NoArgsConstructor
+@SuperBuilder
 @AllArgsConstructor
-@Builder
+@NoArgsConstructor
+
 public class Scholarship extends BaseAuditableEntity {
 
     @Id
