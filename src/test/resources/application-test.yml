@@ -1,0 +1,23 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    defer-datasource-initialization: false
+  sql:
+    init:
+      mode: never
+  test:
+    database:
+      replace: none
+  docker:
+    compose:
+      enabled: false
+
+testcontainers:
+  enabled: true
+
+logging:
+  level:
+    org.testcontainers: INFO
+    com.github.dockerjava: INFO

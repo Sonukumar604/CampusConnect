@@ -16,9 +16,13 @@ public class Bookmark {
     private Long id;
 
     @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     private Long entityId;
+
+    @Column(nullable = false)
+    private String title;
 
     @Enumerated(EnumType.STRING)
     private BookmarkType type;

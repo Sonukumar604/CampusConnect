@@ -5,6 +5,7 @@ import com.example.CampusConnect.security.jwt.JwtAuthenticationFilter;
 import com.example.CampusConnect.security.jwt.JwtEntryPoint;
 import com.example.CampusConnect.security.oauth.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,6 +16,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -35,7 +37,10 @@ public class SecurityConfig {
 
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider
+    ) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
@@ -107,14 +112,16 @@ public class SecurityConfig {
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
-                )
-
-                .oauth2Login(oauth -> oauth
-                        .userInfoEndpoint(userInfo ->
-                                userInfo.userService(customOAuth2UserService)
-                        )
-                        .successHandler(oAuth2SuccessHandler)
                 );
+
+        if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
+            http.oauth2Login(oauth -> oauth
+                    .userInfoEndpoint(userInfo ->
+                            userInfo.userService(customOAuth2UserService)
+                    )
+                    .successHandler(oAuth2SuccessHandler)
+            );
+        }
 
         return http.build();
     }

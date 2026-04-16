@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+
 public abstract class BaseAuditableEntity {
 
     @CreatedDate
