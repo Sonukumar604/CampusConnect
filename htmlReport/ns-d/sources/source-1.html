@@ -1,0 +1,220 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > CustomOAuth2UserService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.CampusConnect.security.oauth.service</a>
+</div>
+
+<h1>Coverage Summary for Class: CustomOAuth2UserService (com.example.CampusConnect.security.oauth.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">CustomOAuth2UserService</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/38)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.CampusConnect.security.oauth.service;
+&nbsp;
+&nbsp;import com.example.CampusConnect.model.Role;
+&nbsp;import com.example.CampusConnect.model.User;
+&nbsp;import com.example.CampusConnect.repository.UserRepository;
+&nbsp;import com.example.CampusConnect.security.oauth.model.AuthProvider;
+&nbsp;import com.example.CampusConnect.security.oauth.userinfo.OAuth2UserInfo;
+&nbsp;import com.example.CampusConnect.security.oauth.userinfo.OAuth2UserInfoFactory;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
+&nbsp;import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+&nbsp;import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+&nbsp;import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+&nbsp;import org.springframework.security.oauth2.core.user.OAuth2User;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.Locale;
+&nbsp;import java.util.Map;
+&nbsp;
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+&nbsp;
+&nbsp;    private final UserRepository userRepository;
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public OAuth2User loadUser(OAuth2UserRequest request)
+&nbsp;            throws OAuth2AuthenticationException {
+&nbsp;
+<b class="nc">&nbsp;        OAuth2User oauth2User = super.loadUser(request);</b>
+&nbsp;
+<b class="nc">&nbsp;        String registrationId =</b>
+<b class="nc">&nbsp;                request.getClientRegistration().getRegistrationId();</b>
+&nbsp;
+<b class="nc">&nbsp;        AuthProvider provider =</b>
+<b class="nc">&nbsp;                AuthProvider.valueOf(registrationId.toUpperCase(Locale.ROOT));</b>
+&nbsp;
+<b class="nc">&nbsp;        OAuth2UserInfo userInfo =</b>
+<b class="nc">&nbsp;                OAuth2UserInfoFactory.getOAuth2UserInfo(</b>
+&nbsp;                        registrationId,
+<b class="nc">&nbsp;                        oauth2User.getAttributes()</b>
+&nbsp;                );
+<b class="nc">&nbsp;        String email = userInfo.getEmail();</b>
+&nbsp;
+<b class="nc">&nbsp;        if (email == null || email.isBlank()) {</b>
+<b class="nc">&nbsp;            email = userInfo.getId() + &quot;@github.local&quot;;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String finalEmail = email;</b>
+<b class="nc">&nbsp;        User user = userRepository.findByEmail(finalEmail)</b>
+<b class="nc">&nbsp;                .map(existingUser -&gt;</b>
+<b class="nc">&nbsp;                        updateExistingUser(existingUser, userInfo, provider))</b>
+<b class="nc">&nbsp;                .orElseGet(() -&gt;</b>
+<b class="nc">&nbsp;                        registerNewUser(finalEmail, userInfo, provider));</b>
+&nbsp;
+<b class="nc">&nbsp;        Map&lt;String, Object&gt; attributes =</b>
+<b class="nc">&nbsp;                new HashMap&lt;&gt;(oauth2User.getAttributes());</b>
+<b class="nc">&nbsp;        attributes.put(&quot;email&quot;, finalEmail);</b>
+&nbsp;
+<b class="nc">&nbsp;        return new DefaultOAuth2User(</b>
+<b class="nc">&nbsp;                oauth2User.getAuthorities(),</b>
+&nbsp;                attributes,
+&nbsp;                &quot;email&quot;
+&nbsp;        );
+&nbsp;    }
+&nbsp;    private User registerNewUser(String email,
+&nbsp;                                 OAuth2UserInfo userInfo,
+&nbsp;                                 AuthProvider provider) {
+&nbsp;
+<b class="nc">&nbsp;        User user = new User();</b>
+&nbsp;
+<b class="nc">&nbsp;        user.setEmail(email);</b>
+<b class="nc">&nbsp;        user.setName(userInfo.getName());</b>
+<b class="nc">&nbsp;        user.setProvider(provider);</b>
+<b class="nc">&nbsp;        user.setImageUrl(userInfo.getImageUrl());</b>
+&nbsp;
+<b class="nc">&nbsp;        user.setPassword(&quot;OAUTH_USER&quot;);</b>
+<b class="nc">&nbsp;        user.setRole(Role.STUDENT);</b>
+<b class="nc">&nbsp;        user.setStatus(User.Status.ACTIVE);</b>
+&nbsp;
+<b class="nc">&nbsp;        return userRepository.save(user);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private User updateExistingUser(User existingUser,
+&nbsp;                                    OAuth2UserInfo userInfo,
+&nbsp;                                    AuthProvider provider) {
+&nbsp;
+<b class="nc">&nbsp;        if (existingUser.getProvider() != null &amp;&amp;</b>
+<b class="nc">&nbsp;                !existingUser.getProvider().equals(provider)) {</b>
+&nbsp;
+<b class="nc">&nbsp;            throw new OAuth2AuthenticationException(</b>
+&nbsp;                    &quot;You previously signed up with &quot; +
+<b class="nc">&nbsp;                            existingUser.getProvider() +</b>
+&nbsp;                            &quot;. Please use that provider to login.&quot;
+&nbsp;            );
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        existingUser.setName(userInfo.getName());</b>
+<b class="nc">&nbsp;        existingUser.setImageUrl(userInfo.getImageUrl());</b>
+&nbsp;
+<b class="nc">&nbsp;        return userRepository.save(existingUser);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-04-20 10:00</div>
+</div>
+</body>
+</html>

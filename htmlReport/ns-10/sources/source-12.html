@@ -1,0 +1,375 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ScholarshipAdminServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.CampusConnect.service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: ScholarshipAdminServiceImpl (com.example.CampusConnect.service.Impl)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ScholarshipAdminServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    9.1%
+  </span>
+  <span class="absValue">
+    (1/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2%
+  </span>
+  <span class="absValue">
+    (2/100)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">ScholarshipAdminServiceImpl$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    9.1%
+  </span>
+  <span class="absValue">
+    (1/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    2%
+  </span>
+  <span class="absValue">
+    (2/100)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.CampusConnect.service.Impl;
+&nbsp;
+&nbsp;import com.example.CampusConnect.dto.*;
+&nbsp;import com.example.CampusConnect.exceptions.ResourceNotFoundException;
+&nbsp;import com.example.CampusConnect.model.*;
+&nbsp;import com.example.CampusConnect.repository.*;
+&nbsp;import com.example.CampusConnect.service.ScholarshipAdminService;
+&nbsp;import com.example.CampusConnect.util.PagedResponse;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import org.modelmapper.ModelMapper;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.data.domain.*;
+&nbsp;import org.springframework.security.access.prepost.PreAuthorize;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;@PreAuthorize(&quot;hasRole(&#39;ADMIN&#39;)&quot;)   // 🔐 ADMIN ONLY
+&nbsp;@Transactional
+&nbsp;public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger log =</b>
+<b class="fc">&nbsp;            LoggerFactory.getLogger(ScholarshipAdminServiceImpl.class);</b>
+&nbsp;
+&nbsp;    private final ScholarshipRepository scholarshipRepository;
+&nbsp;    private final UserRepository userRepository;
+&nbsp;    private final ModelMapper mapper;
+&nbsp;
+&nbsp;    // =========================
+&nbsp;    // CREATE
+&nbsp;    // =========================
+&nbsp;    @Override
+&nbsp;    public ScholarshipDTO createScholarship(Long adminId, CreateScholarshipDTO dto) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Admin [{}] requested scholarship creation | title=&#39;{}&#39;&quot;,</b>
+<b class="nc">&nbsp;                adminId, dto.getTitle());</b>
+&nbsp;
+<b class="nc">&nbsp;        User admin = userRepository.findById(adminId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; {</b>
+<b class="nc">&nbsp;                    log.error(&quot;Admin not found while creating scholarship | adminId={}&quot;, adminId);</b>
+<b class="nc">&nbsp;                    return new ResourceNotFoundException(&quot;Admin not found&quot;);</b>
+&nbsp;                });
+&nbsp;
+&nbsp;        ScholarshipCategory category;
+&nbsp;        try {
+<b class="nc">&nbsp;            category = ScholarshipCategory.valueOf(dto.getCategory().toUpperCase());</b>
+&nbsp;        } catch (IllegalArgumentException ex) {
+<b class="nc">&nbsp;            log.error(&quot;Invalid scholarship category &#39;{}&#39;&quot;, dto.getCategory());</b>
+<b class="nc">&nbsp;            throw new IllegalArgumentException(&quot;Invalid scholarship category&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        Scholarship s = Scholarship.builder()</b>
+<b class="nc">&nbsp;                .title(dto.getTitle())</b>
+<b class="nc">&nbsp;                .description(dto.getDescription())</b>
+<b class="nc">&nbsp;                .category(category)</b>
+<b class="nc">&nbsp;                .eligibilityCriteria(dto.getEligibilityCriteria())</b>
+<b class="nc">&nbsp;                .amount(dto.getAmount())</b>
+<b class="nc">&nbsp;                .deadline(dto.getDeadline())</b>
+<b class="nc">&nbsp;                .provider(dto.getProvider())</b>
+<b class="nc">&nbsp;                .publishStatus(PublishStatus.DRAFT)</b>
+<b class="nc">&nbsp;                .createdByUser(admin)</b>
+<b class="nc">&nbsp;                .build();</b>
+&nbsp;
+<b class="nc">&nbsp;        Scholarship saved = scholarshipRepository.save(s);</b>
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Scholarship created successfully | scholarshipId={}&quot;, saved.getId());</b>
+&nbsp;
+<b class="nc">&nbsp;        return toDto(saved);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // =========================
+&nbsp;    // UPDATE
+&nbsp;    // =========================
+&nbsp;    @Override
+&nbsp;    public ScholarshipDTO updateScholarship(Long adminId,
+&nbsp;                                            Long scholarshipId,
+&nbsp;                                            UpdateScholarshipDTO dto) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Admin [{}] updating scholarship [{}]&quot;, adminId, scholarshipId);</b>
+&nbsp;
+<b class="nc">&nbsp;        Scholarship s = scholarshipRepository.findById(scholarshipId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; {</b>
+<b class="nc">&nbsp;                    log.error(&quot;Scholarship not found while updating | id={}&quot;, scholarshipId);</b>
+<b class="nc">&nbsp;                    return new ResourceNotFoundException(&quot;Scholarship not found&quot;);</b>
+&nbsp;                });
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            s.setCategory(</b>
+<b class="nc">&nbsp;                    ScholarshipCategory.valueOf(dto.getCategory().toUpperCase())</b>
+&nbsp;            );
+&nbsp;        } catch (IllegalArgumentException ex) {
+<b class="nc">&nbsp;            log.error(&quot;Invalid scholarship category &#39;{}&#39;&quot;, dto.getCategory());</b>
+<b class="nc">&nbsp;            throw new IllegalArgumentException(&quot;Invalid scholarship category&quot;);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        s.setTitle(dto.getTitle());</b>
+<b class="nc">&nbsp;        s.setDescription(dto.getDescription());</b>
+<b class="nc">&nbsp;        s.setEligibilityCriteria(dto.getEligibilityCriteria());</b>
+<b class="nc">&nbsp;        s.setAmount(dto.getAmount());</b>
+<b class="nc">&nbsp;        s.setDeadline(dto.getDeadline());</b>
+<b class="nc">&nbsp;        s.setProvider(dto.getProvider());</b>
+&nbsp;
+<b class="nc">&nbsp;        scholarshipRepository.save(s);</b>
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Scholarship updated successfully | scholarshipId={}&quot;, scholarshipId);</b>
+&nbsp;
+<b class="nc">&nbsp;        return toDto(s);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // =========================
+&nbsp;    // DELETE
+&nbsp;    // =========================
+&nbsp;    @Override
+&nbsp;    public void deleteScholarship(Long adminId, Long scholarshipId) {
+&nbsp;
+<b class="nc">&nbsp;        log.warn(&quot;Admin [{}] deleting scholarship [{}]&quot;, adminId, scholarshipId);</b>
+&nbsp;
+<b class="nc">&nbsp;        Scholarship s = scholarshipRepository.findById(scholarshipId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; {</b>
+<b class="nc">&nbsp;                    log.error(&quot;Scholarship not found while deleting | id={}&quot;, scholarshipId);</b>
+<b class="nc">&nbsp;                    return new ResourceNotFoundException(&quot;Scholarship not found&quot;);</b>
+&nbsp;                });
+&nbsp;
+<b class="nc">&nbsp;        scholarshipRepository.delete(s);</b>
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Scholarship deleted successfully | scholarshipId={}&quot;, scholarshipId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // =========================
+&nbsp;    // GET BY ID
+&nbsp;    // =========================
+&nbsp;    @Override
+&nbsp;    @Transactional(readOnly = true)
+&nbsp;    public ScholarshipDTO getScholarshipById(Long scholarshipId) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Fetching scholarship details | scholarshipId={}&quot;, scholarshipId);</b>
+&nbsp;
+<b class="nc">&nbsp;        Scholarship s = scholarshipRepository.findById(scholarshipId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt; {</b>
+<b class="nc">&nbsp;                    log.error(&quot;Scholarship not found | id={}&quot;, scholarshipId);</b>
+<b class="nc">&nbsp;                    return new ResourceNotFoundException(&quot;Scholarship not found&quot;);</b>
+&nbsp;                });
+&nbsp;
+<b class="nc">&nbsp;        return toDto(s);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // =========================
+&nbsp;    // PAGINATION
+&nbsp;    // =========================
+&nbsp;    @Override
+&nbsp;    @Transactional(readOnly = true)
+&nbsp;    public PagedResponse&lt;ScholarshipDTO&gt; getScholarshipsPaged(
+&nbsp;            int page,
+&nbsp;            int size,
+&nbsp;            String sortBy,
+&nbsp;            String sortDir,
+&nbsp;            String category) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(</b>
+&nbsp;                &quot;Fetching scholarships (paged) | page={}, size={}, sortBy={}, sortDir={}, category={}&quot;,
+<b class="nc">&nbsp;                page, size, sortBy, sortDir, category</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);</b>
+<b class="nc">&nbsp;        Pageable pageable = PageRequest.of(page, size, sort);</b>
+&nbsp;
+&nbsp;        Page&lt;Scholarship&gt; p;
+&nbsp;
+<b class="nc">&nbsp;        if (category != null &amp;&amp; !category.isBlank()) {</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                p = scholarshipRepository.findByCategory(</b>
+<b class="nc">&nbsp;                        ScholarshipCategory.valueOf(category.toUpperCase()),</b>
+&nbsp;                        pageable);
+&nbsp;            } catch (IllegalArgumentException ex) {
+<b class="nc">&nbsp;                log.warn(&quot;Invalid scholarship category &#39;{}&#39;, returning all&quot;, category);</b>
+<b class="nc">&nbsp;                p = scholarshipRepository.findAll(pageable);</b>
+&nbsp;            }
+&nbsp;        } else {
+<b class="nc">&nbsp;            p = scholarshipRepository.findAll(pageable);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Fetched {} scholarships (totalElements={})&quot;,</b>
+<b class="nc">&nbsp;                p.getNumberOfElements(), p.getTotalElements());</b>
+&nbsp;
+<b class="nc">&nbsp;        return new PagedResponse&lt;&gt;(</b>
+<b class="nc">&nbsp;                p.getContent()</b>
+<b class="nc">&nbsp;                        .stream()</b>
+<b class="nc">&nbsp;                        .map(this::toDto)</b>
+<b class="nc">&nbsp;                        .collect(Collectors.toList()),</b>
+<b class="nc">&nbsp;                p.getNumber(),</b>
+<b class="nc">&nbsp;                p.getSize(),</b>
+<b class="nc">&nbsp;                p.getTotalElements(),</b>
+<b class="nc">&nbsp;                p.getTotalPages(),</b>
+<b class="nc">&nbsp;                p.isLast()</b>
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    // =========================
+&nbsp;    // DTO MAPPER
+&nbsp;    // =========================
+&nbsp;    private ScholarshipDTO toDto(Scholarship e) {
+&nbsp;
+<b class="nc">&nbsp;        ScholarshipDTO dto = mapper.map(e, ScholarshipDTO.class);</b>
+&nbsp;
+<b class="nc">&nbsp;        dto.setCreatedById(</b>
+<b class="nc">&nbsp;                e.getCreatedByUser() != null</b>
+<b class="nc">&nbsp;                        ? e.getCreatedByUser().getId()</b>
+<b class="nc">&nbsp;                        : null</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        dto.setCreatedByName(</b>
+<b class="nc">&nbsp;                e.getCreatedByUser() != null</b>
+<b class="nc">&nbsp;                        ? e.getCreatedByUser().getName()</b>
+<b class="nc">&nbsp;                        : null</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        dto.setApplicationCount(</b>
+<b class="nc">&nbsp;                e.getApplications() != null</b>
+<b class="nc">&nbsp;                        ? e.getApplications().size()</b>
+<b class="nc">&nbsp;                        : 0</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        dto.setCategory(</b>
+<b class="nc">&nbsp;                e.getCategory() != null</b>
+<b class="nc">&nbsp;                        ? e.getCategory().name()</b>
+<b class="nc">&nbsp;                        : null</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        dto.setPublishStatus(</b>
+<b class="nc">&nbsp;                e.getPublishStatus() != null</b>
+<b class="nc">&nbsp;                        ? e.getPublishStatus().name()</b>
+<b class="nc">&nbsp;                        : null</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        return dto;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-04-20 10:00</div>
+</div>
+</body>
+</html>

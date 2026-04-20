@@ -1,0 +1,295 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > HackathonUserServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.CampusConnect.service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: HackathonUserServiceImpl (com.example.CampusConnect.service.Impl)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">HackathonUserServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    11.1%
+  </span>
+  <span class="absValue">
+    (1/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    5.1%
+  </span>
+  <span class="absValue">
+    (2/39)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">HackathonUserServiceImpl$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    11.1%
+  </span>
+  <span class="absValue">
+    (1/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    5.1%
+  </span>
+  <span class="absValue">
+    (2/39)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.CampusConnect.service.Impl;
+&nbsp;
+&nbsp;import com.example.CampusConnect.dto.HackathonDTO;
+&nbsp;import com.example.CampusConnect.exceptions.ResourceNotFoundException;
+&nbsp;import com.example.CampusConnect.model.Hackathon;
+&nbsp;import com.example.CampusConnect.repository.HackathonRepository;
+&nbsp;import com.example.CampusConnect.service.HackathonUserService;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import org.modelmapper.ModelMapper;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.data.domain.*;
+&nbsp;import org.springframework.security.access.prepost.PreAuthorize;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;
+&nbsp;import java.time.LocalDate;
+&nbsp;import java.util.List;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;@PreAuthorize(&quot;hasRole(&#39;USER&#39;)&quot;)     // Restrict entire service to USER
+&nbsp;@Transactional(readOnly = true)     //  Optimized for read-only
+&nbsp;public class HackathonUserServiceImpl implements HackathonUserService {
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger log =</b>
+<b class="fc">&nbsp;            LoggerFactory.getLogger(HackathonUserServiceImpl.class);</b>
+&nbsp;
+&nbsp;    private final HackathonRepository hackathonRepository;
+&nbsp;    private final ModelMapper modelMapper;
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       NON-PAGED LIST
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;HackathonDTO&gt; getAllHackathons() {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Fetching all hackathons (non-paged)&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;        return hackathonRepository.findAll()</b>
+<b class="nc">&nbsp;                .stream()</b>
+<b class="nc">&nbsp;                .map(this::toDto)</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       NON-PAGED FILTER
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;HackathonDTO&gt; filterHackathons(
+&nbsp;            String technology,
+&nbsp;            String organization,
+&nbsp;            LocalDate startDate) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Filtering hackathons | technology={}, organization={}, startDate={}&quot;,</b>
+&nbsp;                technology, organization, startDate);
+&nbsp;
+<b class="nc">&nbsp;        Page&lt;Hackathon&gt; page = hackathonRepository.filterHackathons(</b>
+&nbsp;                technology,
+&nbsp;                organization,
+&nbsp;                startDate,
+<b class="nc">&nbsp;                Pageable.unpaged()</b>
+&nbsp;        );
+&nbsp;
+<b class="nc">&nbsp;        return page.getContent()</b>
+<b class="nc">&nbsp;                .stream()</b>
+<b class="nc">&nbsp;                .map(this::toDto)</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       GET BY ID
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public HackathonDTO getHackathonById(Long hackathonId) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Fetching hackathon details | id={}&quot;, hackathonId);</b>
+&nbsp;
+<b class="nc">&nbsp;        Hackathon hackathon = hackathonRepository.findById(hackathonId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt;</b>
+<b class="nc">&nbsp;                        new ResourceNotFoundException(&quot;Hackathon not found with id &quot; + hackathonId)</b>
+&nbsp;                );
+&nbsp;
+<b class="nc">&nbsp;        return toDto(hackathon);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       PAGED LIST
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Page&lt;HackathonDTO&gt; getAllHackathonsPaged(
+&nbsp;            int page,
+&nbsp;            int size,
+&nbsp;            String sortBy,
+&nbsp;            String direction) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Fetching paged hackathons | page={}, size={}, sortBy={}, direction={}&quot;,</b>
+<b class="nc">&nbsp;                page, size, sortBy, direction);</b>
+&nbsp;
+<b class="nc">&nbsp;        Pageable pageable = buildPageable(page, size, sortBy, direction);</b>
+&nbsp;
+<b class="nc">&nbsp;        return hackathonRepository.findAll(pageable)</b>
+<b class="nc">&nbsp;                .map(this::toDto);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       PAGED FILTER
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Page&lt;HackathonDTO&gt; filterHackathonsPaged(
+&nbsp;            String technology,
+&nbsp;            String organization,
+&nbsp;            LocalDate startDate,
+&nbsp;            int page,
+&nbsp;            int size,
+&nbsp;            String sortBy,
+&nbsp;            String direction) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Filtering hackathons (paged) | technology={}, organization={}, startDate={}&quot;,</b>
+&nbsp;                technology, organization, startDate);
+&nbsp;
+<b class="nc">&nbsp;        Pageable pageable = buildPageable(page, size, sortBy, direction);</b>
+&nbsp;
+<b class="nc">&nbsp;        return hackathonRepository</b>
+<b class="nc">&nbsp;                .filterHackathons(technology, organization, startDate, pageable)</b>
+<b class="nc">&nbsp;                .map(this::toDto);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       HELPER METHODS
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    private Pageable buildPageable(int page, int size, String sortBy, String direction) {
+&nbsp;
+<b class="nc">&nbsp;        if (sortBy == null || sortBy.isBlank()) {</b>
+<b class="nc">&nbsp;            sortBy = &quot;id&quot;;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        boolean asc = !&quot;desc&quot;.equalsIgnoreCase(direction);</b>
+&nbsp;
+<b class="nc">&nbsp;        Sort sort = asc</b>
+<b class="nc">&nbsp;                ? Sort.by(sortBy).ascending()</b>
+<b class="nc">&nbsp;                : Sort.by(sortBy).descending();</b>
+&nbsp;
+<b class="nc">&nbsp;        return PageRequest.of(</b>
+<b class="nc">&nbsp;                Math.max(0, page),</b>
+<b class="nc">&nbsp;                Math.max(1, size),</b>
+&nbsp;                sort
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    private HackathonDTO toDto(Hackathon hackathon) {
+<b class="nc">&nbsp;        return modelMapper.map(hackathon, HackathonDTO.class);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-04-20 10:00</div>
+</div>
+</body>
+</html>

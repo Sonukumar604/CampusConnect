@@ -1,0 +1,252 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > JwtAuthenticationFilter</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.CampusConnect.security.jwt</a>
+</div>
+
+<h1>Coverage Summary for Class: JwtAuthenticationFilter (com.example.CampusConnect.security.jwt)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">JwtAuthenticationFilter</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (12/24)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    80.6%
+  </span>
+  <span class="absValue">
+    (29/36)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.CampusConnect.security.jwt;
+&nbsp;
+&nbsp;import com.example.CampusConnect.security.CustomUserDetails;
+&nbsp;import com.example.CampusConnect.security.CustomUserDetailsService;
+&nbsp;import io.jsonwebtoken.JwtException;
+&nbsp;import jakarta.servlet.FilterChain;
+&nbsp;import jakarta.servlet.ServletException;
+&nbsp;import jakarta.servlet.http.Cookie;
+&nbsp;import jakarta.servlet.http.HttpServletRequest;
+&nbsp;import jakarta.servlet.http.HttpServletResponse;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import org.springframework.beans.factory.annotation.Qualifier;
+&nbsp;import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+&nbsp;import org.springframework.security.core.context.SecurityContextHolder;
+&nbsp;import org.springframework.security.core.userdetails.UserDetails;
+&nbsp;import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+&nbsp;import org.springframework.stereotype.Component;
+&nbsp;import org.springframework.web.filter.OncePerRequestFilter;
+&nbsp;import org.springframework.web.servlet.HandlerExceptionResolver;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;
+&nbsp;@Component
+&nbsp;@RequiredArgsConstructor
+&nbsp;public class JwtAuthenticationFilter extends OncePerRequestFilter {
+&nbsp;
+&nbsp;    private static final String ACCESS_COOKIE_NAME = &quot;CC_ACCESS_TOKEN&quot;;
+&nbsp;
+&nbsp;    private final JwtService jwtService;
+&nbsp;    private final CustomUserDetailsService userDetailsService;
+&nbsp;
+&nbsp;    @Qualifier(&quot;handlerExceptionResolver&quot;)
+&nbsp;    private final HandlerExceptionResolver handlerExceptionResolver;
+&nbsp;
+&nbsp;    @Override
+&nbsp;    protected boolean shouldNotFilter(HttpServletRequest request) {
+&nbsp;
+<b class="fc">&nbsp;        String path = request.getRequestURI();</b>
+&nbsp;
+<b class="pc">&nbsp;        return path.startsWith(&quot;/oauth2&quot;)</b>
+<b class="pc">&nbsp;                || path.startsWith(&quot;/login&quot;)</b>
+<b class="pc">&nbsp;                || path.startsWith(&quot;/error&quot;)</b>
+<b class="pc">&nbsp;                || path.startsWith(&quot;/api/auth&quot;)</b>
+<b class="fc">&nbsp;                || path.equals(&quot;/oauth-success.html&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    protected void doFilterInternal(HttpServletRequest request,
+&nbsp;                                    HttpServletResponse response,
+&nbsp;                                    FilterChain filterChain)
+&nbsp;            throws ServletException, IOException {
+&nbsp;
+&nbsp;        try {
+&nbsp;
+<b class="fc">&nbsp;            String token = extractAccessToken(request);</b>
+&nbsp;
+<b class="pc">&nbsp;            if (token == null ||</b>
+<b class="pc">&nbsp;                    SecurityContextHolder.getContext().getAuthentication() != null) {</b>
+&nbsp;
+<b class="nc">&nbsp;                filterChain.doFilter(request, response);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            String username = jwtService.extractUsername(token);</b>
+&nbsp;
+<b class="pc">&nbsp;            if (username == null) {</b>
+<b class="nc">&nbsp;                filterChain.doFilter(request, response);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            UserDetails userDetails =</b>
+<b class="fc">&nbsp;                    userDetailsService.loadUserByUsername(username);</b>
+&nbsp;
+&nbsp;            // Validate token normally
+<b class="pc">&nbsp;            if (!jwtService.isAccessTokenValid(token, userDetails)) {</b>
+<b class="nc">&nbsp;                filterChain.doFilter(request, response);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+&nbsp;            // 🔐 Token Version Validation
+<b class="fc">&nbsp;            Integer tokenVersion = jwtService.extractTokenVersion(token);</b>
+&nbsp;
+<b class="fc">&nbsp;            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;</b>
+&nbsp;
+<b class="pc">&nbsp;            if (!tokenVersion.equals(customUserDetails.getTokenVersion())) {</b>
+<b class="nc">&nbsp;                filterChain.doFilter(request, response);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            UsernamePasswordAuthenticationToken authentication =</b>
+&nbsp;                    new UsernamePasswordAuthenticationToken(
+&nbsp;                            userDetails,
+&nbsp;                            null,
+<b class="fc">&nbsp;                            userDetails.getAuthorities()</b>
+&nbsp;                    );
+&nbsp;
+<b class="fc">&nbsp;            authentication.setDetails(</b>
+&nbsp;                    new WebAuthenticationDetailsSource()
+<b class="fc">&nbsp;                            .buildDetails(request)</b>
+&nbsp;            );
+&nbsp;
+<b class="fc">&nbsp;            SecurityContextHolder.getContext()</b>
+<b class="fc">&nbsp;                    .setAuthentication(authentication);</b>
+&nbsp;
+&nbsp;        } catch (JwtException ex) {
+&nbsp;
+<b class="nc">&nbsp;            SecurityContextHolder.clearContext();</b>
+&nbsp;
+<b class="nc">&nbsp;            handlerExceptionResolver.resolveException(</b>
+&nbsp;                    request,
+&nbsp;                    response,
+&nbsp;                    null,
+&nbsp;                    ex
+&nbsp;            );
+&nbsp;
+&nbsp;            return;
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        filterChain.doFilter(request, response);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private String extractAccessToken(HttpServletRequest request) {
+&nbsp;
+<b class="fc">&nbsp;        Cookie[] cookies = request.getCookies();</b>
+&nbsp;
+<b class="pc">&nbsp;        if (cookies == null) return null;</b>
+&nbsp;
+<b class="pc">&nbsp;        for (Cookie cookie : cookies) {</b>
+<b class="pc">&nbsp;            if (ACCESS_COOKIE_NAME.equals(cookie.getName())) {</b>
+<b class="fc">&nbsp;                return cookie.getValue();</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return null;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-04-20 10:00</div>
+</div>
+</body>
+</html>

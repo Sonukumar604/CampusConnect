@@ -1,0 +1,112 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > CreateHackathonDTO</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.CampusConnect.dto</a>
+</div>
+
+<h1>Coverage Summary for Class: CreateHackathonDTO (com.example.CampusConnect.dto)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+</tr>
+<tr>
+  <td class="name">CreateHackathonDTO</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.CampusConnect.dto;
+&nbsp;import jakarta.validation.constraints.*;
+&nbsp;import lombok.AllArgsConstructor;
+&nbsp;import lombok.Builder;
+&nbsp;import lombok.Data;
+&nbsp;import lombok.NoArgsConstructor;
+&nbsp;import java.time.LocalDate;
+&nbsp;@Data
+&nbsp;@NoArgsConstructor
+&nbsp;@AllArgsConstructor
+&nbsp;@Builder
+&nbsp;public class CreateHackathonDTO {
+&nbsp;    @NotBlank(message = &quot;Title is required&quot;)
+&nbsp;    @Size(min = 3, max = 100, message = &quot;Hackathon title must be between 3 and 100 characters&quot;)
+&nbsp;    private String title;
+&nbsp;    @NotBlank(message = &quot;Description is required&quot;)
+&nbsp;    @Size(min = 10, max = 1000, message = &quot;Description must be between 10 and 1000 characters&quot;)
+&nbsp;    private String description;
+&nbsp;    @NotBlank(message = &quot;Technology field is required&quot;)
+&nbsp;    @Size(min = 2, max = 100, message = &quot;Technology must be between 2 and 100 characters&quot;)
+&nbsp;    private String technology;
+&nbsp;
+&nbsp;    @NotBlank(message = &quot;Organization cannot be blank&quot;)
+&nbsp;    private String organization;
+&nbsp;
+&nbsp;    @NotBlank(message = &quot;Mode cannot be blank (ONLINE, OFFLINE, HYBRID)&quot;)
+&nbsp;    private String mode;
+&nbsp;
+&nbsp;    private String location;
+&nbsp;
+&nbsp;    @NotNull(message = &quot;Start date is required&quot;)
+&nbsp;    @FutureOrPresent(message = &quot;Start date must be today or in the future&quot;)
+&nbsp;    private LocalDate startDate;
+&nbsp;    @NotNull(message = &quot;End date is required&quot;)
+&nbsp;    @Future(message = &quot;End date must be a future date&quot;)
+&nbsp;    private LocalDate endDate;
+&nbsp;
+&nbsp;    @PositiveOrZero(message = &quot;Prize pool must be a positive number or zero&quot;)
+&nbsp;    private String prizePool;
+&nbsp;
+&nbsp;    @Min(value = 1, message = &quot;There must be at least 1 participant&quot;)
+&nbsp;    @Max(value = 1000, message = &quot;Max participants cannot exceed 1000&quot;)
+&nbsp;    private int maxParticipants;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-04-20 10:00</div>
+</div>
+</body>
+</html>

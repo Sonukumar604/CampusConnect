@@ -1,0 +1,341 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > EventUserServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.CampusConnect.service.Impl</a>
+</div>
+
+<h1>Coverage Summary for Class: EventUserServiceImpl (com.example.CampusConnect.service.Impl)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">EventUserServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    11.1%
+  </span>
+  <span class="absValue">
+    (1/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/30)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    3%
+  </span>
+  <span class="absValue">
+    (2/67)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">EventUserServiceImpl$$SpringCGLIB$$0</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    11.1%
+  </span>
+  <span class="absValue">
+    (1/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/30)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    3%
+  </span>
+  <span class="absValue">
+    (2/67)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.CampusConnect.service.Impl;
+&nbsp;
+&nbsp;import com.example.CampusConnect.dto.EventDTO;
+&nbsp;import com.example.CampusConnect.exceptions.ResourceNotFoundException;
+&nbsp;import com.example.CampusConnect.model.*;
+&nbsp;import com.example.CampusConnect.repository.EventRepository;
+&nbsp;import com.example.CampusConnect.service.EventUserService;
+&nbsp;import com.example.CampusConnect.util.PagedResponse;
+&nbsp;import lombok.RequiredArgsConstructor;
+&nbsp;import org.modelmapper.ModelMapper;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.springframework.data.domain.*;
+&nbsp;import org.springframework.security.access.prepost.PreAuthorize;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.transaction.annotation.Transactional;
+&nbsp;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.util.List;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;@Service
+&nbsp;@RequiredArgsConstructor
+&nbsp;@PreAuthorize(&quot;hasRole(&#39;USER&#39;)&quot;)         // 🔐 USER-only access
+&nbsp;@Transactional(readOnly = true)          // 📖 Entire service is read-only
+&nbsp;public class EventUserServiceImpl implements EventUserService {
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger log =</b>
+<b class="fc">&nbsp;            LoggerFactory.getLogger(EventUserServiceImpl.class);</b>
+&nbsp;
+&nbsp;    private final EventRepository eventRepository;
+&nbsp;    private final ModelMapper mapper;
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       LIST PUBLISHED EVENTS
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public PagedResponse&lt;EventDTO&gt; listPublishedEvents(
+&nbsp;            int page,
+&nbsp;            int size,
+&nbsp;            String sortBy,
+&nbsp;            String sortDir) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Listing published events | page={}, size={}, sortBy={}, sortDir={}&quot;,</b>
+<b class="nc">&nbsp;                page, size, sortBy, sortDir);</b>
+&nbsp;
+<b class="nc">&nbsp;        Sort sort = sortDir.equalsIgnoreCase(&quot;desc&quot;)</b>
+<b class="nc">&nbsp;                ? Sort.by(sortBy).descending()</b>
+<b class="nc">&nbsp;                : Sort.by(sortBy).ascending();</b>
+&nbsp;
+<b class="nc">&nbsp;        Pageable pageable = PageRequest.of(page, size, sort);</b>
+&nbsp;
+<b class="nc">&nbsp;        Page&lt;Event&gt; result =</b>
+<b class="nc">&nbsp;                eventRepository.findByPublishStatus(PublishStatus.PUBLISHED, pageable);</b>
+&nbsp;
+<b class="nc">&nbsp;        return buildPagedResponse(result);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       UPCOMING EVENTS
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;EventDTO&gt; upcomingEvents(int limit) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Fetching upcoming events | limit={}&quot;, limit);</b>
+&nbsp;
+<b class="nc">&nbsp;        LocalDateTime now = LocalDateTime.now();</b>
+&nbsp;
+<b class="nc">&nbsp;        Page&lt;Event&gt; result =</b>
+<b class="nc">&nbsp;                eventRepository.findByStartDateTimeBetweenAndPublishStatus(</b>
+&nbsp;                        now,
+<b class="nc">&nbsp;                        now.plusYears(1),</b>
+&nbsp;                        PublishStatus.PUBLISHED,
+<b class="nc">&nbsp;                        PageRequest.of(0, limit, Sort.by(&quot;startDateTime&quot;))</b>
+&nbsp;                );
+&nbsp;
+<b class="nc">&nbsp;        return result.getContent()</b>
+<b class="nc">&nbsp;                .stream()</b>
+<b class="nc">&nbsp;                .map(this::toDto)</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       FILTER EVENTS
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public PagedResponse&lt;EventDTO&gt; filterEvents(
+&nbsp;            int page,
+&nbsp;            int size,
+&nbsp;            String sortBy,
+&nbsp;            String sortDir,
+&nbsp;            String type,
+&nbsp;            String mode,
+&nbsp;            String location,
+&nbsp;            LocalDateTime from,
+&nbsp;            LocalDateTime to) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Filtering events | page={}, size={}, type={}, mode={}, location={}&quot;,</b>
+<b class="nc">&nbsp;                page, size, type, mode, location);</b>
+&nbsp;
+<b class="nc">&nbsp;        Sort sort = sortDir.equalsIgnoreCase(&quot;desc&quot;)</b>
+<b class="nc">&nbsp;                ? Sort.by(sortBy).descending()</b>
+<b class="nc">&nbsp;                : Sort.by(sortBy).ascending();</b>
+&nbsp;
+<b class="nc">&nbsp;        Pageable pageable = PageRequest.of(page, size, sort);</b>
+&nbsp;
+<b class="nc">&nbsp;        Page&lt;Event&gt; pageResult =</b>
+<b class="nc">&nbsp;                eventRepository.findByPublishStatus(PublishStatus.PUBLISHED, pageable);</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;Event&gt; filtered = pageResult.getContent().stream()</b>
+<b class="nc">&nbsp;                .filter(event -&gt; matchesFilters(event, type, mode, location, from, to))</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;
+<b class="nc">&nbsp;        return new PagedResponse&lt;&gt;(</b>
+<b class="nc">&nbsp;                filtered.stream().map(this::toDto).collect(Collectors.toList()),</b>
+&nbsp;                page,
+&nbsp;                size,
+<b class="nc">&nbsp;                filtered.size(),</b>
+&nbsp;                1,
+&nbsp;                true
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       GET EVENT DETAILS
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public EventDTO getEventDetails(Long eventId) {
+&nbsp;
+<b class="nc">&nbsp;        log.info(&quot;Fetching event details | eventId={}&quot;, eventId);</b>
+&nbsp;
+<b class="nc">&nbsp;        Event event = eventRepository.findById(eventId)</b>
+<b class="nc">&nbsp;                .orElseThrow(() -&gt;</b>
+<b class="nc">&nbsp;                        new ResourceNotFoundException(&quot;Event not found&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        return toDto(event);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /* ============================================================
+&nbsp;       HELPER METHODS
+&nbsp;       ============================================================ */
+&nbsp;
+&nbsp;    private boolean matchesFilters(Event e,
+&nbsp;                                   String type,
+&nbsp;                                   String mode,
+&nbsp;                                   String location,
+&nbsp;                                   LocalDateTime from,
+&nbsp;                                   LocalDateTime to) {
+&nbsp;
+<b class="nc">&nbsp;        boolean ok = true;</b>
+&nbsp;
+<b class="nc">&nbsp;        if (type != null &amp;&amp; !type.isBlank()) {</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                ok &amp;= e.getEventType() == EventType.valueOf(type);</b>
+&nbsp;            } catch (Exception ignored) {
+<b class="nc">&nbsp;                log.debug(&quot;Invalid event type ignored: {}&quot;, type);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (mode != null &amp;&amp; !mode.isBlank()) {</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                ok &amp;= e.getMode() == EventMode.valueOf(mode);</b>
+&nbsp;            } catch (Exception ignored) {
+<b class="nc">&nbsp;                log.debug(&quot;Invalid event mode ignored: {}&quot;, mode);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (location != null &amp;&amp; !location.isBlank()) {</b>
+<b class="nc">&nbsp;            ok &amp;= e.getLocation() != null &amp;&amp;</b>
+<b class="nc">&nbsp;                    e.getLocation().toLowerCase().contains(location.toLowerCase());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (from != null) {</b>
+<b class="nc">&nbsp;            ok &amp;= e.getStartDateTime() != null &amp;&amp;</b>
+<b class="nc">&nbsp;                    !e.getStartDateTime().isBefore(from);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (to != null) {</b>
+<b class="nc">&nbsp;            ok &amp;= e.getEndDateTime() != null &amp;&amp;</b>
+<b class="nc">&nbsp;                    !e.getEndDateTime().isAfter(to);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        return ok;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private PagedResponse&lt;EventDTO&gt; buildPagedResponse(Page&lt;Event&gt; page) {
+&nbsp;
+<b class="nc">&nbsp;        return new PagedResponse&lt;&gt;(</b>
+<b class="nc">&nbsp;                page.getContent().stream()</b>
+<b class="nc">&nbsp;                        .map(this::toDto)</b>
+<b class="nc">&nbsp;                        .collect(Collectors.toList()),</b>
+<b class="nc">&nbsp;                page.getNumber(),</b>
+<b class="nc">&nbsp;                page.getSize(),</b>
+<b class="nc">&nbsp;                page.getTotalElements(),</b>
+<b class="nc">&nbsp;                page.getTotalPages(),</b>
+<b class="nc">&nbsp;                page.isLast()</b>
+&nbsp;        );
+&nbsp;    }
+&nbsp;
+&nbsp;    private EventDTO toDto(Event event) {
+<b class="nc">&nbsp;        return mapper.map(event, EventDTO.class);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-04-20 10:00</div>
+</div>
+</body>
+</html>
