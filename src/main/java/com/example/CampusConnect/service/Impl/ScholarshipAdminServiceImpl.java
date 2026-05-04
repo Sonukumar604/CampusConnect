@@ -239,3 +239,4 @@ public class ScholarshipAdminServiceImpl implements ScholarshipAdminService {
         return dto;
     }
 }
+

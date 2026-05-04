@@ -159,3 +159,4 @@ public class HackathonUserServiceImpl implements HackathonUserService {
         return modelMapper.map(hackathon, HackathonDTO.class);
     }
 }
+

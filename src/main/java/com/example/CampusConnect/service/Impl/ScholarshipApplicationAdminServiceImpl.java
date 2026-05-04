@@ -93,3 +93,4 @@ public class ScholarshipApplicationAdminServiceImpl
         return mapper.map(updated, ScholarshipApplicationResponseDTO.class);
     }
 }
+

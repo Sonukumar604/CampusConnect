@@ -1,10 +1,7 @@
 package com.example.CampusConnect.service.Impl;
 
 import com.example.CampusConnect.exceptions.ResourceNotFoundException;
-import com.example.CampusConnect.model.Course;
-import com.example.CampusConnect.model.NotificationType;
-import com.example.CampusConnect.model.Role;
-import com.example.CampusConnect.model.User;
+import com.example.CampusConnect.model.*;
 import com.example.CampusConnect.repository.CourseRepository;
 import com.example.CampusConnect.repository.UserRepository;
 import com.example.CampusConnect.service.CourseAdminService;

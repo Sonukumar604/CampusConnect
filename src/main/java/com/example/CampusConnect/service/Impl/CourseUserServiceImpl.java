@@ -137,3 +137,4 @@ public class CourseUserServiceImpl implements CourseUserService {
         return mapper.map(saved, CourseEnrollmentDTO.class);
     }
 }
+

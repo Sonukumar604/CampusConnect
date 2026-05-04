@@ -205,3 +205,4 @@ public class EventUserServiceImpl implements EventUserService {
         return mapper.map(event, EventDTO.class);
     }
 }
+
