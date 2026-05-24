@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -24,6 +25,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtService jwtService;
     private final JwtCookieUtil jwtCookieUtil;
+
+    @Value("${app.frontend.oauth-success-url:http://localhost:5173/dashboard}")
+    private String oauthSuccessUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -75,7 +79,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             getRedirectStrategy().sendRedirect(
                     request,
                     response,
-                    "/oauth-success.html"
+                    oauthSuccessUrl
             );
 
         } catch (Exception ex) {

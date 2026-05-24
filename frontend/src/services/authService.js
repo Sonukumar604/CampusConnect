@@ -1,6 +1,9 @@
 import { authClient } from './apiClient'
 
 export const authService = {
+  getOAuthUrl(provider = 'google') {
+    return `${authClient.defaults.baseURL}/oauth2/authorization/${provider}`
+  },
   async login(payload) {
     const { data } = await authClient.post('/api/auth/login', payload)
     return data
