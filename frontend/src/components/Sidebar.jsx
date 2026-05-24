@@ -8,6 +8,7 @@ const baseLinks = [
   { label: 'Hackathons', to: '/hackathons' },
   { label: 'Internships', to: '/internships' },
   { label: 'Courses', to: '/courses' },
+  { label: 'My Activity', to: '/my-activity' },
   { label: 'Events', to: '/events' },
   { label: 'Scholarships', to: '/scholarships' }
 ]

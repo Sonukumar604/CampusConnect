@@ -10,6 +10,7 @@ import { internshipService } from '../services/internshipService'
 import { eventService } from '../services/eventService'
 import { scholarshipService } from '../services/scholarshipService'
 import { notificationService } from '../services/notificationService'
+import toast from 'react-hot-toast'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -69,7 +70,7 @@ export default function DashboardPage() {
 
         const notificationList = await notificationService.list()
         setNotifications(notificationList?.slice(0, 4) || [])
-      } catch (error) {
+      } catch {
         setStats([])
         setFeed([])
       } finally {
@@ -79,6 +80,18 @@ export default function DashboardPage() {
 
     load()
   }, [user])
+
+  const markNotificationRead = async (id) => {
+    try {
+      await notificationService.markRead(id)
+      setNotifications((current) =>
+        current.map((note) => (note.id === id ? { ...note, read: true } : note))
+      )
+      toast.success('Notification marked as read')
+    } catch {
+      toast.error('Could not update notification')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-10">
@@ -128,9 +141,30 @@ export default function DashboardPage() {
               <EmptyState title="No alerts" description="You are all caught up." />
             )}
             {notifications.map((note) => (
-              <div key={note.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-sand-50">{note.title || 'Notification'}</p>
-                <p className="text-xs text-sand-200/70">{note.message || 'Update received.'}</p>
+              <div
+                key={note.id}
+                className={`rounded-2xl border p-4 ${
+                  note.read
+                    ? 'border-white/10 bg-white/5'
+                    : 'border-tide-300/30 bg-tide-300/10'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-sand-50">{note.title || 'Notification'}</p>
+                    <p className="text-xs text-sand-200/70">
+                      {note.message || 'Update received.'}
+                    </p>
+                  </div>
+                  {!note.read && (
+                    <button
+                      className="shrink-0 rounded-full border border-tide-300/50 px-3 py-1 text-xs font-semibold text-tide-200"
+                      onClick={() => markNotificationRead(note.id)}
+                    >
+                      Mark read
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

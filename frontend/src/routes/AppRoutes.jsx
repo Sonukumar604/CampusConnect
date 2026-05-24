@@ -18,6 +18,7 @@ import HackathonRegistrationPage from '../pages/HackathonRegistrationPage'
 import InternshipsPage from '../pages/InternshipsPage'
 import InternshipApplicationsPage from '../pages/InternshipApplicationsPage'
 import CoursesPage from '../pages/CoursesPage'
+import MyActivityPage from '../pages/MyActivityPage'
 import EventsPage from '../pages/EventsPage'
 import EventRegistrationPage from '../pages/EventRegistrationPage'
 import ScholarshipsPage from '../pages/ScholarshipsPage'
@@ -51,6 +52,7 @@ export default function AppRoutes() {
           <Route path="/internships" element={<InternshipsPage />} />
           <Route path="/internships/applications" element={<InternshipApplicationsPage />} />
           <Route path="/courses" element={<CoursesPage />} />
+          <Route path="/my-activity" element={<MyActivityPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/events/:id/register" element={<EventRegistrationPage />} />
           <Route path="/scholarships" element={<ScholarshipsPage />} />
