@@ -164,6 +164,15 @@ public class GlobalExceptionHandler {
                 "Unsupported JWT token");
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+
+        log.warn("Illegal argument: {}", ex.getMessage());
+
+        return buildResponse(HttpStatus.UNAUTHORIZED,
+                ex.getMessage());
+    }
+
 
 
     /* ==========================

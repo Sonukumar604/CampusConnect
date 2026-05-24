@@ -25,6 +25,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -42,6 +43,9 @@ public class AuthServiceImpl implements AuthService {
     private final SessionService sessionService;
     private final EmailVerificationService emailVerificationService;
 
+    @Value("${app.security.require-email-verification:true}")
+    private boolean requireEmailVerification;
+
 
     @Override
     public void signup(SignupRequestDTO dto) {
@@ -50,19 +54,23 @@ public class AuthServiceImpl implements AuthService {
             throw new DuplicateResourceException("Email already registered");
         }
 
+        boolean emailVerificationRequired = requireEmailVerification;
+
         User user = User.builder()
                 .name(dto.getName())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .role(Role.STUDENT)
                 .status(User.Status.ACTIVE)
-                .emailVerified(false)
-                .enabled(false)
+            .emailVerified(!emailVerificationRequired)
+            .enabled(!emailVerificationRequired)
                 .build();
 
         userRepository.save(user);
 
-        emailVerificationService.createVerificationToken(user);
+        if (emailVerificationRequired) {
+            emailVerificationService.createVerificationToken(user);
+        }
     }
 
     @Override
@@ -177,7 +185,7 @@ public class AuthServiceImpl implements AuthService {
         if (user.getStatus() == User.Status.BLOCKED) {
             throw new IllegalStateException("User account is blocked");
         }
-        if (!user.isEmailVerified()) {
+        if (requireEmailVerification && !user.isEmailVerified()) {
             throw new IllegalStateException("Please verify your email first");
         }
     }
